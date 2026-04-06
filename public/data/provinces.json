@@ -1,0 +1,274 @@
+[
+    {
+        "id": 23,
+        "name": "Thành phố Hà Nội",
+        "code": "PROV_1",
+        "api_code": 1,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 24,
+        "name": "Tỉnh Cao Bằng",
+        "code": "PROV_4",
+        "api_code": 4,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 25,
+        "name": "Tỉnh Tuyên Quang",
+        "code": "PROV_8",
+        "api_code": 8,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 330,
+        "name": "Tỉnh Điện Biên",
+        "code": "PROV_11",
+        "api_code": 11,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 376,
+        "name": "Tỉnh Lai Châu",
+        "code": "PROV_12",
+        "api_code": 12,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 415,
+        "name": "Tỉnh Sơn La",
+        "code": "PROV_14",
+        "api_code": 14,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 491,
+        "name": "Tỉnh Lào Cai",
+        "code": "PROV_15",
+        "api_code": 15,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 591,
+        "name": "Tỉnh Thái Nguyên",
+        "code": "PROV_19",
+        "api_code": 19,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 684,
+        "name": "Tỉnh Lạng Sơn",
+        "code": "PROV_20",
+        "api_code": 20,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 750,
+        "name": "Tỉnh Quảng Ninh",
+        "code": "PROV_22",
+        "api_code": 22,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 805,
+        "name": "Tỉnh Bắc Ninh",
+        "code": "PROV_24",
+        "api_code": 24,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 26,
+        "name": "Tỉnh Phú Thọ",
+        "code": "PROV_25",
+        "api_code": 25,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1053,
+        "name": "Thành phố Hải Phòng",
+        "code": "PROV_31",
+        "api_code": 31,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1168,
+        "name": "Tỉnh Hưng Yên",
+        "code": "PROV_33",
+        "api_code": 33,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1273,
+        "name": "Tỉnh Ninh Bình",
+        "code": "PROV_37",
+        "api_code": 37,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1403,
+        "name": "Tỉnh Thanh Hóa",
+        "code": "PROV_38",
+        "api_code": 38,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1570,
+        "name": "Tỉnh Nghệ An",
+        "code": "PROV_40",
+        "api_code": 40,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1701,
+        "name": "Tỉnh Hà Tĩnh",
+        "code": "PROV_42",
+        "api_code": 42,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1771,
+        "name": "Tỉnh Quảng Trị",
+        "code": "PROV_44",
+        "api_code": 44,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1850,
+        "name": "Thành phố Huế",
+        "code": "PROV_46",
+        "api_code": 46,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1891,
+        "name": "Thành phố Đà Nẵng",
+        "code": "PROV_48",
+        "api_code": 48,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 1986,
+        "name": "Tỉnh Quảng Ngãi",
+        "code": "PROV_51",
+        "api_code": 51,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 2083,
+        "name": "Tỉnh Gia Lai",
+        "code": "PROV_52",
+        "api_code": 52,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 2219,
+        "name": "Tỉnh Khánh Hòa",
+        "code": "PROV_56",
+        "api_code": 56,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 2285,
+        "name": "Tỉnh Đắk Lắk",
+        "code": "PROV_66",
+        "api_code": 66,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 2388,
+        "name": "Tỉnh Lâm Đồng",
+        "code": "PROV_68",
+        "api_code": 68,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 2513,
+        "name": "Tỉnh Đồng Nai",
+        "code": "PROV_75",
+        "api_code": 75,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 2609,
+        "name": "Thành phố Hồ Chí Minh",
+        "code": "PROV_79",
+        "api_code": 79,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 2778,
+        "name": "Tỉnh Tây Ninh",
+        "code": "PROV_80",
+        "api_code": 80,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 28,
+        "name": "Tỉnh Đồng Tháp",
+        "code": "PROV_82",
+        "api_code": 82,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 2977,
+        "name": "Tỉnh Vĩnh Long",
+        "code": "PROV_86",
+        "api_code": 86,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 29,
+        "name": "Tỉnh An Giang",
+        "code": "PROV_91",
+        "api_code": 91,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 3204,
+        "name": "Thành phố Cần Thơ",
+        "code": "PROV_92",
+        "api_code": 92,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    },
+    {
+        "id": 3308,
+        "name": "Tỉnh Cà Mau",
+        "code": "PROV_96",
+        "api_code": 96,
+        "is_active": true,
+        "updated_at": "24\/02\/2026 03:14"
+    }
+]
