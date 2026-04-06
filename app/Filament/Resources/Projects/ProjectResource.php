@@ -78,7 +78,7 @@ class ProjectResource extends Resource
                                     ->label('Tên hệ')
                                     ->required()
                                     ->live(onBlur: true)
-                                    ->afterStateUpdated(fn (string $operation, $state, $set) => $operation === 'create' ? $set('slug', \Illuminate\Support\Str::slug($state)) : null),
+                                    ->afterStateUpdated(fn(string $operation, $state, $set) => $operation === 'create' ? $set('slug', \Illuminate\Support\Str::slug($state)) : null),
                                 TextInput::make('slug')
                                     ->label('Slug')
                                     ->required()
@@ -139,7 +139,7 @@ class ProjectResource extends Resource
                             ->live(),
                         TextInput::make('rejection_reason')
                             ->label('Lý do từ chối')
-                            ->visible(fn ($get) => $get('status') === 'rejected')
+                            ->visible(fn($get) => $get('status') === 'rejected')
                             ->requiredIf('status', 'rejected')
                             ->columnSpanFull(),
                     ])->columns(2),
@@ -216,6 +216,78 @@ class ProjectResource extends Resource
     //         ]);
     // }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Thông tin công trình')
+                    ->description('Thông tin định danh và liên hệ của công trình.')
+                    ->icon('heroicon-o-document-text')
+                    ->columnSpanFull()
+                    ->schema([
+                        TextEntry::make('dealer.name')
+                            ->label('Đại lý thi công'),
+                        TextEntry::make('systemType.name')
+                            ->label('Hệ'),
+                        TextEntry::make('title')
+                            ->label('Tên công trình')
+                            ->columnSpanFull(),
+                        TextEntry::make('capacity')
+                            ->label('Công suất'),
+                        TextEntry::make('completion_date')
+                            ->label('Thời gian hoàn thành')
+                            ->date('d/m/Y'),
+                        TextEntry::make('address')
+                            ->label('Địa điểm thi công (Địa chỉ)')
+                            ->columnSpanFull(),
+                        TextEntry::make('description')
+                            ->label('Mô tả')
+                            ->placeholder('Chưa có mô tả')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
+                Section::make('Hình ảnh')
+                    ->description('Hình ảnh thi công thực tế')
+                    ->icon('heroicon-o-photo')
+                    ->columnSpanFull()
+                    ->schema([
+                        ViewEntry::make('images')
+                            ->label('Ảnh công trình')
+                            ->view('filament.infolists.entries.project-gallery')
+                            ->columnSpanFull(),
+                    ]),
+
+                Section::make('Kiểm duyệt')
+                    ->description('Trạng thái phê duyệt công trình')
+                    ->icon('heroicon-o-shield-check')
+                    ->columnSpanFull()
+                    ->schema([
+                        TextEntry::make('status')
+                            ->label('Trạng thái')
+                            ->badge()
+                            ->formatStateUsing(fn(string $state): string => match ($state) {
+                                'pending' => 'Chờ duyệt',
+                                'approved' => 'Đã duyệt',
+                                'rejected' => 'Bị từ chối',
+                                default => $state,
+                            })
+                            ->color(fn(string $state): string => match ($state) {
+                                'pending' => 'warning',
+                                'approved' => 'success',
+                                'rejected' => 'danger',
+                                default => 'gray',
+                            }),
+                        TextEntry::make('rejection_reason')
+                            ->label('Lý do từ chối')
+                            ->visible(fn($record) => $record?->status === 'rejected')
+                            ->placeholder('Không có')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+            ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -286,20 +358,20 @@ class ProjectResource extends Resource
                     ->label('Duyệt')
                     ->icon('heroicon-m-check')
                     ->color('success')
-                    ->visible(fn (Project $record) => $record->status === 'pending')
-                    ->action(fn (Project $record) => $record->update(['status' => 'approved', 'approved_at' => now(), 'approved_by' => auth()->id()]))
+                    ->visible(fn(Project $record) => $record->status === 'pending')
+                    ->action(fn(Project $record) => $record->update(['status' => 'approved', 'approved_at' => now(), 'approved_by' => auth()->id()]))
                     ->requiresConfirmation(),
                 Action::make('reject')
                     ->label('Từ chối')
                     ->icon('heroicon-m-x-mark')
                     ->color('danger')
-                    ->visible(fn (Project $record) => $record->status === 'pending')
+                    ->visible(fn(Project $record) => $record->status === 'pending')
                     ->form([
                         TextInput::make('rejection_reason')
                             ->label('Lý do từ chối')
                             ->required(),
                     ])
-                    ->action(fn (Project $record, array $data) => $record->update(['status' => 'rejected', 'rejection_reason' => $data['rejection_reason']])),
+                    ->action(fn(Project $record, array $data) => $record->update(['status' => 'rejected', 'rejection_reason' => $data['rejection_reason']])),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

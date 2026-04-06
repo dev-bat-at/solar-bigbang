@@ -37,7 +37,7 @@ class SystemSetting extends Model
         if (str_starts_with($value, 'http'))
             return $value;
 
-        return rtrim(env('APP_URL', 'http://localhost'), '/') . '/' . ltrim($value, '/');
+        return asset($value);
     }
 
     public static function set($key, $value, $group = null)

@@ -2,222 +2,521 @@
     @php
         $record = $this->record;
 
-        $imageUrls = collect($record->images ?? [])
+        $images = collect($record->images ?? [])
             ->filter()
-            ->map(function ($image) {
+            ->values()
+            ->map(function ($image, $index) {
                 $url = \Illuminate\Support\Facades\Storage::disk('root_public')->url($image);
 
-                return \Illuminate\Support\Str::startsWith($url, ['http://', 'https://'])
-                    ? $url
-                    : url($url);
-            })
-            ->values();
+                return [
+                    'url' => \Illuminate\Support\Str::startsWith($url, ['http://', 'https://']) ? $url : url($url),
+                    'original_name' => basename($image),
+                    'display_name' => pathinfo(basename($image), PATHINFO_FILENAME),
+                    'is_primary' => $index === 0,
+                ];
+            });
 
         $statusLabel = match ($record->status) {
             'approved' => 'Đã duyệt',
-            'rejected' => 'Từ chối',
+            'rejected' => 'Bị từ chối',
             default => 'Chờ duyệt',
-        };
-
-        $statusClasses = match ($record->status) {
-            'approved' => 'bg-emerald-500/15 text-emerald-300 ring-emerald-400/30',
-            'rejected' => 'bg-rose-500/15 text-rose-300 ring-rose-400/30',
-            default => 'bg-amber-500/15 text-amber-300 ring-amber-400/30',
         };
     @endphp
 
-    <div
-        x-data="{
-            images: {{ \Illuminate\Support\Js::from($imageUrls->all()) }},
-            currentIndex: 0,
-            open: false,
-            openGallery(index) {
-                this.currentIndex = index
-                this.open = true
-                document.body.classList.add('overflow-hidden')
-            },
-            closeGallery() {
-                this.open = false
-                document.body.classList.remove('overflow-hidden')
-            },
-            nextImage() {
-                if (! this.images.length) return
-                this.currentIndex = (this.currentIndex + 1) % this.images.length
-            },
-            prevImage() {
-                if (! this.images.length) return
-                this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length
+    <style>
+        .project-legacy-page {
+            --project-bg-panel: #ffffff;
+            --project-bg-header: #f8fafc;
+            --project-bg-input: #ffffff;
+            --project-bg-soft: #f3f4f6;
+            --project-bg-gallery: #ffffff;
+            --project-border: #e5e7eb;
+            --project-border-strong: #d1d5db;
+            --project-text: #111827;
+            --project-text-muted: #6b7280;
+            --project-text-soft: #475569;
+            --project-icon-bg: #f3f4f6;
+            --project-icon-color: #6b7280;
+            --project-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .dark .project-legacy-page {
+            --project-bg-panel: #1f1f23;
+            --project-bg-header: #1f1f23;
+            --project-bg-input: #2a2a2e;
+            --project-bg-soft: #2a2a2e;
+            --project-bg-gallery: #1f1f23;
+            --project-border: #3a3a41;
+            --project-border-strong: #4a4a52;
+            --project-text: #f9fafb;
+            --project-text-muted: #a1a1aa;
+            --project-text-soft: #d4d4d8;
+            --project-icon-bg: #2a2a2e;
+            --project-icon-color: #a1a1aa;
+            --project-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+        }
+
+        .project-legacy-section {
+            overflow: hidden;
+            border: 1px solid var(--project-border);
+            border-radius: 1rem;
+            background: var(--project-bg-panel);
+            box-shadow: var(--project-shadow);
+        }
+
+        .project-legacy-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.875rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--project-border);
+            background: var(--project-bg-header);
+        }
+
+        .project-legacy-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 999px;
+            background: var(--project-icon-bg);
+            color: var(--project-icon-color);
+            flex-shrink: 0;
+        }
+
+        .project-legacy-icon svg {
+            width: 1rem;
+            height: 1rem;
+            display: block;
+        }
+
+        .project-legacy-title {
+            margin: 0;
+            font-size: 1.2rem;
+            line-height: 1.55rem;
+            font-weight: 700;
+            color: var(--project-text);
+        }
+
+        .project-legacy-subtitle {
+            margin: 0.25rem 0 0;
+            font-size: 0.82rem;
+            line-height: 1.25rem;
+            color: var(--project-text-muted);
+        }
+
+        .project-legacy-body {
+            padding: 1.25rem;
+        }
+
+        .project-legacy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.25rem 1.5rem;
+        }
+
+        .project-legacy-span-full {
+            grid-column: 1 / -1;
+        }
+
+        .project-legacy-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .project-legacy-label {
+            margin: 0;
+            font-size: 0.88rem;
+            line-height: 1.25rem;
+            font-weight: 600;
+            color: var(--project-text);
+        }
+
+        .project-legacy-value {
+            min-height: 3rem;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--project-border-strong);
+            border-radius: 0.85rem;
+            background: var(--project-bg-input);
+            font-size: 0.9rem;
+            line-height: 1.35rem;
+            color: var(--project-text);
+            box-sizing: border-box;
+        }
+
+        .project-legacy-value-textarea {
+            min-height: 5.5rem;
+            white-space: pre-wrap;
+        }
+
+        .project-legacy-status {
+            display: inline-flex;
+            align-items: center;
+            min-height: 3rem;
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--project-border-strong);
+            border-radius: 0.85rem;
+            font-size: 0.9rem;
+            line-height: 1.35rem;
+            font-weight: 600;
+            color: var(--project-text);
+            background: var(--project-bg-input);
+            box-sizing: border-box;
+        }
+
+        .project-legacy-gallery-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-legacy-gallery-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin: 0;
+            font-size: 0.88rem;
+            line-height: 1.2rem;
+            font-weight: 700;
+            color: var(--project-text);
+        }
+
+        .project-legacy-gallery-title svg {
+            width: 1rem;
+            height: 1rem;
+            display: block;
+        }
+
+        .project-legacy-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.8rem;
+            height: 1.8rem;
+            padding: 0 0.6rem;
+            border-radius: 999px;
+            background: var(--project-bg-soft);
+            font-size: 0.72rem;
+            line-height: 1rem;
+            font-weight: 600;
+            color: var(--project-text-soft);
+        }
+
+        .project-legacy-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 1rem;
+        }
+
+        .project-legacy-shot {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--project-border-strong);
+            border-radius: 0.9rem;
+            background: var(--project-bg-gallery);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .project-legacy-shot:hover {
+            transform: translateY(-2px);
+            border-color: var(--project-text-muted);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .project-legacy-shot-primary {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(191, 219, 254, 0.8);
+        }
+
+        .dark .project-legacy-shot-primary {
+            box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.45);
+        }
+
+        .project-legacy-badge {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.35rem 0.55rem;
+            border-radius: 0.6rem;
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            color: #ffffff;
+            font-size: 0.68rem;
+            line-height: 1rem;
+            font-weight: 700;
+        }
+
+        .project-legacy-badge svg {
+            width: 0.8rem;
+            height: 0.8rem;
+            display: block;
+        }
+
+        .project-legacy-thumb-link {
+            display: block;
+            width: 100%;
+            text-decoration: none;
+            color: inherit;
+            cursor: zoom-in;
+        }
+
+        .project-legacy-thumb {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            display: block;
+            background: var(--project-bg-soft);
+        }
+
+        .project-legacy-shot-footer {
+            padding: 0.75rem;
+            border-top: 1px solid var(--project-border);
+        }
+
+        .project-legacy-shot-name {
+            margin: 0;
+            font-size: 0.72rem;
+            line-height: 1.1rem;
+            font-weight: 500;
+            color: var(--project-text-soft);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .project-legacy-empty {
+            padding: 2.75rem 1rem;
+            border: 1px dashed var(--project-border-strong);
+            border-radius: 0.9rem;
+            text-align: center;
+            color: var(--project-text-muted);
+            background: var(--project-bg-header);
+        }
+
+        .project-legacy-empty svg {
+            width: 2rem;
+            height: 2rem;
+            display: block;
+            margin: 0 auto 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .project-legacy-grid {
+                grid-template-columns: 1fr;
             }
+
+            .project-legacy-body {
+                padding: 1rem;
+            }
+
+            .project-legacy-header {
+                padding: 1rem;
+            }
+
+            .project-legacy-gallery {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+
+    <div
+        class="project-legacy-page"
+        x-data="{
+            init() {
+                this.loadFancybox()
+            },
+            loadFancybox() {
+                if (! document.getElementById('fancybox-css')) {
+                    const link = document.createElement('link')
+                    link.id = 'fancybox-css'
+                    link.rel = 'stylesheet'
+                    link.href = 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css'
+                    document.head.appendChild(link)
+                }
+
+                if (typeof Fancybox === 'undefined') {
+                    const script = document.createElement('script')
+                    script.src = 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js'
+                    script.onload = () => this.initFancybox()
+                    document.head.appendChild(script)
+                } else {
+                    this.initFancybox()
+                }
+            },
+            initFancybox() {
+                if (typeof Fancybox === 'undefined') {
+                    return
+                }
+
+                Fancybox.unbind('[data-fancybox]')
+                Fancybox.bind('[data-fancybox]', {
+                    zIndex: 999999,
+                    hash: false,
+                })
+            },
         }"
-        x-on:keydown.window.escape="if (open) closeGallery()"
-        x-on:keydown.window.arrow-right.prevent="if (open) nextImage()"
-        x-on:keydown.window.arrow-left.prevent="if (open) prevImage()"
-        class="min-h-[calc(100vh-12rem)] rounded-[30px] bg-[#09090b] p-4 text-white sm:p-6 xl:p-7"
+        x-init="init()"
     >
-        <div class="grid gap-5 xl:grid-cols-[1.05fr_1fr]">
-            <section class="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.06] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-                <div class="border-b border-white/10 px-6 py-5">
-                    <h2 class="text-xl font-semibold tracking-tight text-white">Thông tin công trình</h2>
+        <section class="project-legacy-section">
+            <div class="project-legacy-header">
+                <span class="project-legacy-icon">
+                    <x-heroicon-o-information-circle />
+                </span>
+
+                <div>
+                    <h2 class="project-legacy-title">Thông tin định danh</h2>
+                    <p class="project-legacy-subtitle">Cơ bản về dự án/công trình</p>
                 </div>
-
-                <div class="grid gap-8 px-6 py-7 md:grid-cols-2 xl:grid-cols-3">
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Tên công trình</p>
-                        <p class="text-lg font-semibold text-white">{{ $record->title }}</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Đại lý thi công</p>
-                        <p class="text-lg font-semibold text-white">{{ $record->dealer?->name ?? '-' }}</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Hệ sản phẩm</p>
-                        <p class="text-lg font-semibold text-white">{{ $record->systemType?->name ?? '-' }}</p>
-                    </div>
-
-                    <div class="space-y-2 md:col-span-2 xl:col-span-3">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Địa chỉ</p>
-                        <p class="text-base font-medium leading-7 text-white/90">{{ $record->address ?: '-' }}</p>
-                    </div>
-
-                    <div class="space-y-2 md:col-span-2 xl:col-span-3">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Mô tả</p>
-                        <p class="max-w-4xl text-base leading-7 text-white/75">{{ $record->description ?: 'Chưa có mô tả cho công trình này.' }}</p>
-                    </div>
-                </div>
-            </section>
-
-            <section class="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.06] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-                <div class="border-b border-white/10 px-6 py-5">
-                    <h2 class="text-xl font-semibold tracking-tight text-white">Trạng thái và tiến độ</h2>
-                </div>
-
-                <div class="grid gap-8 px-6 py-7 md:grid-cols-2 xl:grid-cols-3">
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Trạng thái</p>
-                        <span class="inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 {{ $statusClasses }}">
-                            {{ $statusLabel }}
-                        </span>
-                    </div>
-
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Công suất</p>
-                        <p class="text-lg font-semibold text-white">{{ $record->capacity ?: '-' }}</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Hoàn thành</p>
-                        <p class="text-lg font-semibold text-white">{{ optional($record->completion_date)?->format('d/m/Y') ?: '-' }}</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Ngày tạo</p>
-                        <p class="text-base font-medium text-white/90">{{ optional($record->created_at)?->format('d/m/Y H:i') ?: '-' }}</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Cập nhật</p>
-                        <p class="text-base font-medium text-white/90">{{ optional($record->updated_at)?->format('d/m/Y H:i') ?: '-' }}</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">Lý do từ chối</p>
-                        <p class="text-base font-medium leading-7 text-white/90">{{ $record->rejection_reason ?: '-' }}</p>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <section class="mt-5 overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.06] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-            <div class="border-b border-white/10 px-6 py-5">
-                <h2 class="text-xl font-semibold tracking-tight text-white">Hình ảnh công trình</h2>
             </div>
 
-            <div class="px-6 py-6">
-                @if ($imageUrls->isNotEmpty())
-                    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-                        @foreach ($imageUrls as $index => $imageUrl)
-                            <button
-                                type="button"
-                                x-on:click="openGallery({{ $index }})"
-                                class="group relative aspect-[0.9] overflow-hidden rounded-[18px] border border-white/10 bg-white/5 text-left transition duration-200 hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_20px_35px_rgba(0,0,0,0.35)] focus:outline-none focus:ring-2 focus:ring-white/40"
-                            >
-                                <img
-                                    src="{{ $imageUrl }}"
-                                    alt="Ảnh công trình {{ $index + 1 }}"
-                                    class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                                >
+            <div class="project-legacy-body">
+                <div class="project-legacy-grid">
+                    <div class="project-legacy-field">
+                        <p class="project-legacy-label">Đại lý thi công</p>
+                        <div class="project-legacy-value">{{ $record->dealer?->name ?? '-' }}</div>
+                    </div>
 
-                                <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 via-black/10 to-transparent"></div>
-                            </button>
-                        @endforeach
+                    <div class="project-legacy-field">
+                        <p class="project-legacy-label">Hệ</p>
+                        <div class="project-legacy-value">{{ $record->systemType?->name ?? '-' }}</div>
+                    </div>
+
+                    <div class="project-legacy-field project-legacy-span-full">
+                        <p class="project-legacy-label">Tên công trình</p>
+                        <div class="project-legacy-value">{{ $record->title ?: '-' }}</div>
+                    </div>
+
+                    <div class="project-legacy-field">
+                        <p class="project-legacy-label">Công suất</p>
+                        <div class="project-legacy-value">{{ $record->capacity ?: '-' }}</div>
+                    </div>
+
+                    <div class="project-legacy-field">
+                        <p class="project-legacy-label">Thời gian hoàn thành</p>
+                        <div class="project-legacy-value">{{ optional($record->completion_date)?->format('d/m/Y') ?: '-' }}</div>
+                    </div>
+
+                    <div class="project-legacy-field project-legacy-span-full">
+                        <p class="project-legacy-label">Địa điểm thi công (Địa chỉ)</p>
+                        <div class="project-legacy-value">{{ $record->address ?: '-' }}</div>
+                    </div>
+
+                    <div class="project-legacy-field project-legacy-span-full">
+                        <p class="project-legacy-label">Mô tả</p>
+                        <div class="project-legacy-value project-legacy-value-textarea">{{ $record->description ?: 'Chưa có mô tả cho công trình này.' }}</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="project-legacy-section">
+            <div class="project-legacy-header">
+                <span class="project-legacy-icon">
+                    <x-heroicon-o-shield-check />
+                </span>
+
+                <div>
+                    <h2 class="project-legacy-title">Kiểm duyệt</h2>
+                    <p class="project-legacy-subtitle">Trạng thái phê duyệt công trình</p>
+                </div>
+            </div>
+
+            <div class="project-legacy-body">
+                <div class="project-legacy-grid">
+                    <div class="project-legacy-field">
+                        <p class="project-legacy-label">Trạng thái</p>
+                        <div class="project-legacy-status">{{ $statusLabel }}</div>
+                    </div>
+
+                    <div class="project-legacy-field">
+                        <p class="project-legacy-label">Ngày tạo</p>
+                        <div class="project-legacy-value">{{ optional($record->created_at)?->format('d/m/Y H:i') ?: '-' }}</div>
+                    </div>
+
+                    <div class="project-legacy-field">
+                        <p class="project-legacy-label">Cập nhật</p>
+                        <div class="project-legacy-value">{{ optional($record->updated_at)?->format('d/m/Y H:i') ?: '-' }}</div>
+                    </div>
+
+                    <div class="project-legacy-field project-legacy-span-full">
+                        <p class="project-legacy-label">Lý do từ chối</p>
+                        <div class="project-legacy-value project-legacy-value-textarea">{{ $record->rejection_reason ?: 'Không có' }}</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="project-legacy-section">
+            <div class="project-legacy-header">
+                <span class="project-legacy-icon">
+                    <x-heroicon-o-photo />
+                </span>
+
+                <div>
+                    <h2 class="project-legacy-title">Hình ảnh</h2>
+                    <p class="project-legacy-subtitle">Hình ảnh thi công thực tế</p>
+                </div>
+            </div>
+
+            <div class="project-legacy-body">
+                <div class="project-legacy-gallery-head">
+                    <h4 class="project-legacy-gallery-title">
+                        <x-heroicon-m-photo />
+                        Ảnh hiện có
+                    </h4>
+
+                    <span class="project-legacy-count">{{ $images->count() }}</span>
+                </div>
+
+                @if ($images->isEmpty())
+                    <div class="project-legacy-empty">
+                        <x-heroicon-o-photo />
+                        <div>Chưa có ảnh nào</div>
                     </div>
                 @else
-                    <div class="flex min-h-56 items-center justify-center rounded-[18px] border border-dashed border-white/15 bg-white/[0.03] px-6 text-center">
-                        <div class="space-y-2">
-                            <p class="text-base font-semibold text-white/85">Chưa có hình ảnh công trình</p>
-                            <p class="text-sm text-white/45">Thêm ảnh ở mục chỉnh sửa để hiển thị tại đây.</p>
-                        </div>
+                    <div class="project-legacy-gallery">
+                        @foreach ($images as $image)
+                            <article class="project-legacy-shot {{ $image['is_primary'] ? 'project-legacy-shot-primary' : '' }}">
+                                @if ($image['is_primary'])
+                                    <span class="project-legacy-badge">
+                                        <x-heroicon-m-star />
+                                        Ảnh chính
+                                    </span>
+                                @endif
+
+                                <a
+                                    href="{{ $image['url'] }}"
+                                    data-src="{{ $image['url'] }}"
+                                    data-fancybox="project-gallery"
+                                    data-caption="{{ $image['original_name'] }}"
+                                    class="project-legacy-thumb-link"
+                                >
+                                    <img
+                                        src="{{ $image['url'] }}"
+                                        alt="{{ $image['original_name'] }}"
+                                        class="project-legacy-thumb"
+                                        title="Click để phóng to"
+                                    />
+                                </a>
+
+                                <div class="project-legacy-shot-footer">
+                                    <p class="project-legacy-shot-name" title="{{ $image['original_name'] }}">{{ $image['display_name'] }}</p>
+                                </div>
+                            </article>
+                        @endforeach
                     </div>
                 @endif
             </div>
         </section>
-
-        <div
-            x-cloak
-            x-show="open"
-            x-transition.opacity.duration.200ms
-            class="fixed inset-0 z-[80] bg-black/85 backdrop-blur-sm"
-        >
-            <div class="absolute inset-0" x-on:click="closeGallery()"></div>
-
-            <button
-                type="button"
-                x-on:click="closeGallery()"
-                class="absolute right-6 top-6 z-[82] flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-4xl text-white transition hover:bg-white/20"
-                aria-label="Đóng gallery"
-            >
-                ×
-            </button>
-
-            <button
-                type="button"
-                x-show="images.length > 1"
-                x-on:click.stop="prevImage()"
-                class="absolute left-5 top-1/2 z-[82] flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-white/12 text-5xl leading-none text-white transition hover:bg-white/20"
-                aria-label="Ảnh trước"
-            >
-                ‹
-            </button>
-
-            <button
-                type="button"
-                x-show="images.length > 1"
-                x-on:click.stop="nextImage()"
-                class="absolute right-5 top-1/2 z-[82] flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-white/12 text-5xl leading-none text-white transition hover:bg-white/20"
-                aria-label="Ảnh tiếp theo"
-            >
-                ›
-            </button>
-
-            <div class="relative z-[81] flex h-full items-center justify-center px-6 py-16">
-                <div class="flex max-h-full max-w-5xl flex-col items-center justify-center gap-5">
-                    <div class="overflow-hidden rounded-[22px] bg-white/5 shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-                        <img
-                            :src="images[currentIndex]"
-                            :alt="`Ảnh công trình ${currentIndex + 1}`"
-                            class="max-h-[72vh] max-w-[min(88vw,900px)] object-contain"
-                        >
-                    </div>
-
-                    <div
-                        x-show="images.length > 1"
-                        class="rounded-full bg-white/12 px-4 py-1.5 text-sm font-semibold tracking-wide text-white"
-                        x-text="`${currentIndex + 1} / ${images.length}`"
-                    ></div>
-                </div>
-            </div>
-        </div>
     </div>
 </x-filament-panels::page>

@@ -4,11 +4,11 @@ namespace App\Filament\Pages;
 
 use App\Models\SystemSetting;
 use Filament\Forms;
-use Filament\Schemas\Schema;
-use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 
 class SystemSettings extends Page implements HasForms
 {
@@ -20,19 +20,22 @@ class SystemSettings extends Page implements HasForms
     protected static string | \UnitEnum | null $navigationGroup = 'Cấu hình';
     protected static ?int $navigationSort = 2;
 
-    public static function shouldRegisterNavigation(): bool
-    {
-        return ! in_array(static::class, config('admin_menu.hidden_resources', []));
-    }
     protected string $view = 'filament.pages.system-settings';
 
     public ?array $data = [];
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return ! in_array(static::class, config('admin_menu.hidden_resources', []));
+    }
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
-        if (!$user)
+
+        if (! $user) {
             return false;
+        }
 
         return $user->hasRole('Super Admin') || $user->can('settings.view');
     }

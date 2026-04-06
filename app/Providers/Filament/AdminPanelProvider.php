@@ -62,6 +62,10 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->renderHook(
+                PanelsRenderHook::USER_MENU_BEFORE,
+                fn (): string => view('filament.hooks.topbar-admin-alerts')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::TOPBAR_END,
                 fn (): string => config('app.filament_show_error_test_button')
                     ? view('filament.hooks.error-test-button')->render()

@@ -18,6 +18,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Filters\TrashedFilter;
+use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\Leads\Pages\ListLeads;
@@ -39,6 +40,11 @@ class LeadResource extends Resource
     protected static string | \UnitEnum | null $navigationGroup = 'Quản lý Đối tác & Lead';
 
     protected static ?int $navigationSort = 2;
+
+    protected static function moneyMask(): RawJs
+    {
+        return RawJs::make('$money($input, \',\', \'.\', 0)');
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -90,6 +96,8 @@ class LeadResource extends Resource
                             ->maxLength(255),
                         TextInput::make('estimated_value')
                             ->label('Giá trị dự kiến')
+                            ->mask(static::moneyMask())
+                            ->stripCharacters('.')
                             ->numeric()
                             ->prefix('VNĐ'),
                     ])->columns(2),

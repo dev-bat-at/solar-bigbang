@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
@@ -32,6 +33,11 @@ class SystemTypeResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    protected static function moneyMask(): RawJs
+    {
+        return RawJs::make('$money($input, \',\', \'.\', 0)');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -89,6 +95,8 @@ class SystemTypeResource extends Resource
                                     ->schema([
                                         Forms\Components\TextInput::make('quote_settings.electric_price')
                                             ->label('Giá điện quy đổi (VNĐ/kWh)')
+                                            ->mask(static::moneyMask())
+                                            ->stripCharacters('.')
                                             ->numeric()
                                             ->default(2500)
                                             ->required(),
@@ -124,6 +132,8 @@ class SystemTypeResource extends Resource
                                             ->visible(fn ($get) => in_array($get('quote_formula_type'), ['bam_tai', 'hybrid'], true)),
                                         Forms\Components\TextInput::make('quote_settings.battery_price_per_kwh')
                                             ->label('Giá pin lưu trữ / kWh')
+                                            ->mask(static::moneyMask())
+                                            ->stripCharacters('.')
                                             ->numeric()
                                             ->default(2500000)
                                             ->visible(fn ($get) => $get('quote_formula_type') === 'hybrid'),
@@ -171,6 +181,8 @@ class SystemTypeResource extends Resource
                                                     ->helperText('Để trống nếu là mức cuối cùng.'),
                                                 Forms\Components\TextInput::make('price_per_kw')
                                                     ->label('Đơn giá / kWp')
+                                                    ->mask(static::moneyMask())
+                                                    ->stripCharacters('.')
                                                     ->numeric()
                                                     ->required(),
                                             ])
