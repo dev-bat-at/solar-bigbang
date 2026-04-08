@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Filament\Resources\SupportRequests\Pages;
+
+use App\Filament\Resources\SupportRequests\SupportRequestResource;
+use Filament\Resources\Pages\CreateRecord;
+
+class CreateSupportRequest extends CreateRecord
+{
+    protected static string $resource = SupportRequestResource::class;
+
+    public function getMaxContentWidth(): \Filament\Support\Enums\Width
+    {
+        return \Filament\Support\Enums\Width::Full;
+    }
+}

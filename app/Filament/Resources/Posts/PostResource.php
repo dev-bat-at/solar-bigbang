@@ -23,15 +23,15 @@ class PostResource extends Resource
 {
     protected static ?string $model = Post::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
-    protected static string | \UnitEnum | null $navigationGroup = 'Quản lý Nội dung';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
+    protected static string|\UnitEnum|null $navigationGroup = 'Quản lý Nội dung';
     protected static ?string $modelLabel = 'Bài viết';
     protected static ?string $pluralModelLabel = 'Tin tức & Bài viết';
     protected static ?int $navigationSort = 1;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return ! in_array(static::class, config('admin_menu.hidden_resources', []));
+        return !in_array(static::class, config('admin_menu.hidden_resources', []));
     }
 
     public static function form(Schema $schema): Schema
@@ -48,7 +48,7 @@ class PostResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn ($state, $set) => $set('slug', Str::slug($state))),
+                            ->afterStateUpdated(fn($state, $set) => $set('slug', Str::slug($state))),
                         Forms\Components\TextInput::make('slug')
                             ->label('Đường dẫn bài viết (URL)')
                             ->required()
@@ -57,6 +57,7 @@ class PostResource extends Resource
                         Forms\Components\RichEditor::make('content')
                             ->label('Nội dung chính của bài viết')
                             ->required()
+                            ->fileAttachmentsDisk('root_public')
                             ->fileAttachmentsDirectory('posts/content')
                             ->extraInputAttributes(['style' => 'min-height: 500px;'])
                             ->columnSpanFull(),
@@ -72,6 +73,7 @@ class PostResource extends Resource
                             ->maxLength(255),
                         Forms\Components\RichEditor::make('content_2')
                             ->label('Nội dung phần 2')
+                            ->fileAttachmentsDisk('root_public')
                             ->fileAttachmentsDirectory('posts/content_2')
                             ->extraInputAttributes(['style' => 'min-height: 400px;'])
                             ->columnSpanFull(),
@@ -85,6 +87,7 @@ class PostResource extends Resource
                         Forms\Components\FileUpload::make('featured_image')
                             ->label('Ảnh bìa bài viết')
                             ->image()
+                            ->disk('root_public')
                             ->directory('posts/thumbnails')
                             ->required(),
                         Forms\Components\Select::make('status')
@@ -148,6 +151,7 @@ class PostResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('featured_image')
                     ->label('Ảnh bìa')
+                    ->disk('root_public')
                     ->circular(),
                 Tables\Columns\TextColumn::make('title')
                     ->label('Tiêu đề')
@@ -156,12 +160,12 @@ class PostResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'draft' => 'Nháp',
                         'published' => 'Đã đăng',
                         'archived' => 'Lưu trữ',
                     })
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'draft' => 'gray',
                         'published' => 'success',
                         'archived' => 'danger',

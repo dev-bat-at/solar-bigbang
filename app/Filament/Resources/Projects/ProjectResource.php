@@ -46,7 +46,7 @@ class ProjectResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Quản lý Đối tác & Lead';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 6;
 
     public static function shouldRegisterNavigation(): bool
     {

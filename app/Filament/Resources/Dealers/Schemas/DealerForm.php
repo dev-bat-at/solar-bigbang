@@ -18,6 +18,7 @@ class DealerForm
                             ->label('Ảnh đại diện')
                             ->image()
                             ->avatar()
+                            ->disk('root_public')
                             ->directory('dealers/avatars')
                             ->columnSpanFull(),
                         \Filament\Forms\Components\TextInput::make('name')
@@ -82,20 +83,12 @@ class DealerForm
                             ->options(\App\Models\Province::whereNull('parent_id')->pluck('name', 'id'))
                             ->searchable()
                             ->live()
-                            ->afterStateUpdated(fn($set) => $set('district_id', null))
-                            ->required(),
-                        \Filament\Forms\Components\Select::make('district_id')
-                            ->label('Quận / Huyện')
-                            ->prefixIcon('heroicon-m-map-pin')
-                            ->options(fn($get) => \App\Models\Province::where('parent_id', $get('province_id'))->pluck('name', 'id'))
-                            ->searchable()
-                            ->live()
                             ->afterStateUpdated(fn($set) => $set('ward_id', null))
                             ->required(),
                         \Filament\Forms\Components\Select::make('ward_id')
                             ->label('Phường / Xã')
                             ->prefixIcon('heroicon-m-hashtag')
-                            ->options(fn($get) => \App\Models\Province::where('parent_id', $get('district_id'))->pluck('name', 'id'))
+                            ->options(fn($get) => \App\Models\Province::where('parent_id', $get('province_id'))->pluck('name', 'id'))
                             ->searchable()
                             ->required(),
 

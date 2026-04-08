@@ -2,30 +2,28 @@
 
 namespace App\Filament\Resources\Customers;
 
-use App\Models\Customer;
-use App\Models\Dealer;
-use Filament\Resources\Resource;
-use Filament\Tables\Table;
-use Filament\Tables;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Select;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
-use Filament\Tables\Filters\TrashedFilter;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Filament\Resources\Customers\Pages\EditCustomer;
+use App\Filament\Resources\Customers\Pages\ListCustomers;
+use App\Models\Customer;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CustomerResource extends Resource
 {
@@ -33,14 +31,15 @@ class CustomerResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationLabel = 'Khách hàng';
+    protected static ?string $navigationLabel = 'Khách hàng đại lý';
 
-    protected static ?string $modelLabel = 'Khách hàng';
+    protected static ?string $modelLabel = 'Khách hàng đại lý';
 
-    protected static ?string $pluralModelLabel = 'Khách hàng';
+    protected static ?string $pluralModelLabel = 'Khách hàng đại lý';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Quản lý Đối tác & Lead';
-    protected static ?int $navigationSort = 3;
+
+    protected static ?int $navigationSort = 5;
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -52,7 +51,7 @@ class CustomerResource extends Resource
         return $schema
             ->components([
                 Section::make('Đại lý quản lý')
-                    ->description('Chọn đại lý sở hữu khách hàng này. Khách hàng sẽ gửi yêu cầu hỗ trợ qua đại lý được gán.')
+                    ->description('Đây là khách hàng phát sinh từ luồng liên hệ với đại lý, không phải người dùng đăng ký tài khoản.')
                     ->icon('heroicon-o-building-storefront')
                     ->columnSpanFull()
                     ->schema([
@@ -64,12 +63,22 @@ class CustomerResource extends Resource
                             ->preload()
                             ->required()
                             ->placeholder('Chọn đại lý')
-                            ->helperText('Khách hàng thuộc về đại lý nào?')
-                            ->columnSpanFull(),
-                    ]),
+                            ->helperText('Khách hàng này đang thuộc đại lý nào?'),
+                        Select::make('system_type_id')
+                            ->label('Hệ thống quan tâm')
+                            ->prefixIcon('heroicon-m-bolt')
+                            ->relationship('systemType', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('Chọn hệ thống'),
+                        TextInput::make('contact_time')
+                            ->label('Thời gian ưu tiên liên hệ')
+                            ->prefixIcon('heroicon-m-clock')
+                            ->maxLength(255),
+                    ])->columns(2),
 
-                Section::make('Thông tin khách hàng')
-                    ->description('Thông tin định danh và liên hệ của khách hàng.')
+                Section::make('Thông tin khách hàng đại lý')
+                    ->description('Lưu thông tin liên hệ của khách hàng được đại lý chăm sóc.')
                     ->icon('heroicon-o-user-group')
                     ->columnSpanFull()
                     ->schema([
@@ -85,7 +94,7 @@ class CustomerResource extends Resource
                             ->required()
                             ->maxLength(255),
                         TextInput::make('email')
-                            ->label('Địa chỉ Email')
+                            ->label('Địa chỉ email')
                             ->prefixIcon('heroicon-m-envelope')
                             ->email()
                             ->maxLength(255),
@@ -97,7 +106,7 @@ class CustomerResource extends Resource
                     ])->columns(2),
 
                 Section::make('Trạng thái tài khoản')
-                    ->description('Quản lý trạng thái hoạt động của khách hàng.')
+                    ->description('Quản lý trạng thái hoạt động của khách hàng trong luồng đại lý.')
                     ->icon('heroicon-o-shield-check')
                     ->columnSpanFull()
                     ->schema([
@@ -116,7 +125,7 @@ class CustomerResource extends Resource
                             ->label('Lý do khóa')
                             ->prefixIcon('heroicon-m-lock-closed')
                             ->maxLength(255)
-                            ->visible(fn ($get) => $get('status') === 'locked')
+                            ->visible(fn($get) => $get('status') === 'locked')
                             ->requiredIf('status', 'locked')
                             ->helperText('Bắt buộc nhập lý do khi khóa tài khoản.'),
                     ])->columns(2),
@@ -147,6 +156,18 @@ class CustomerResource extends Resource
                     ->searchable()
                     ->icon('heroicon-m-envelope')
                     ->toggleable(isToggledHiddenByDefault: false),
+                TextColumn::make('systemType.name')
+                    ->label('Hệ thống quan tâm')
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color('success')
+                    ->placeholder('—'),
+                TextColumn::make('contact_time')
+                    ->label('Giờ liên hệ')
+                    ->searchable()
+                    ->limit(20)
+                    ->placeholder('—'),
                 TextColumn::make('address')
                     ->label('Địa chỉ')
                     ->limit(30)
@@ -158,24 +179,26 @@ class CustomerResource extends Resource
                         'active' => 'Hoạt động',
                         'inactive' => 'Ngưng hoạt động',
                         'locked' => 'Bị khóa',
+                        default => $state,
                     })
                     ->color(fn(string $state): string => match ($state) {
                         'active' => 'success',
                         'inactive' => 'gray',
                         'locked' => 'danger',
+                        default => 'gray',
                     }),
                 TextColumn::make('lock_reason')
                     ->label('Lý do khóa')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('—'),
-                TextColumn::make('leads_count')
-                    ->label('Số Lead')
-                    ->counts('leads')
-                    ->sortable()
-                    ->badge()
-                    ->color('warning'),
+                // TextColumn::make('leads_count')
+                //     ->label('Số lead')
+                //     ->counts('leads')
+                //     ->sortable()
+                //     ->badge()
+                //     ->color('warning'),
                 TextColumn::make('created_at')
-                    ->label('Ngày đăng ký')
+                    ->label('Ngày tạo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -188,6 +211,12 @@ class CustomerResource extends Resource
                     ->searchable()
                     ->preload()
                     ->placeholder('Tất cả đại lý'),
+                SelectFilter::make('system_type_id')
+                    ->label('Hệ thống quan tâm')
+                    ->relationship('systemType', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('Tất cả hệ thống'),
                 SelectFilter::make('status')
                     ->label('Trạng thái')
                     ->options([

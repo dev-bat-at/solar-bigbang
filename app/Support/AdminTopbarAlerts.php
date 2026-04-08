@@ -3,12 +3,12 @@
 namespace App\Support;
 
 use App\Filament\Resources\Customers\CustomerResource;
-use App\Filament\Resources\Leads\LeadResource;
 use App\Filament\Resources\Projects\ProjectResource;
+use App\Filament\Resources\SupportRequests\SupportRequestResource;
 use App\Models\AdminUser;
 use App\Models\Customer;
-use App\Models\Lead;
 use App\Models\Project;
+use App\Models\SupportRequest;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Cache;
 
@@ -19,7 +19,7 @@ class AdminTopbarAlerts
      */
     public static function types(): array
     {
-        return ['customers', 'leads', 'projects'];
+        return ['customers', 'support_requests', 'projects'];
     }
 
     public static function isValidType(string $type): bool
@@ -40,7 +40,7 @@ class AdminTopbarAlerts
     {
         return match ($type) {
             'customers' => CustomerResource::getUrl(),
-            'leads' => LeadResource::getUrl('index', [
+            'support_requests' => SupportRequestResource::getUrl('index', [
                 'tableFilters' => [
                     'status' => [
                         'value' => 'new',
@@ -66,9 +66,9 @@ class AdminTopbarAlerts
         $customersTotal = Customer::query()->count();
         $customersUnread = static::unreadCustomersCount($user);
 
-        $leadsBaseQuery = Lead::query()->where('status', 'new');
-        $leadsTotal = (clone $leadsBaseQuery)->count();
-        $leadsUnread = static::unreadCountForQuery(clone $leadsBaseQuery, $user, 'leads');
+        $supportRequestsBaseQuery = SupportRequest::query()->where('status', 'new');
+        $supportRequestsTotal = (clone $supportRequestsBaseQuery)->count();
+        $supportRequestsUnread = static::unreadCountForQuery(clone $supportRequestsBaseQuery, $user, 'support_requests');
 
         $projectsBaseQuery = Project::query()->where('status', 'pending');
         $projectsTotal = (clone $projectsBaseQuery)->count();
@@ -86,14 +86,14 @@ class AdminTopbarAlerts
                 'url' => CustomerResource::canViewAny() ? route('admin.topbar-alerts.redirect', ['type' => 'customers']) : null,
             ],
             [
-                'type' => 'leads',
-                'label' => 'Yêu cầu báo giá',
-                'description' => 'Lead mới cần tiếp nhận',
-                'total_count' => $leadsTotal,
-                'unread_count' => $leadsUnread,
+                'type' => 'support_requests',
+                'label' => 'Liên hệ & báo giá',
+                'description' => 'Yêu cầu mới gửi trực tiếp cho admin',
+                'total_count' => $supportRequestsTotal,
+                'unread_count' => $supportRequestsUnread,
                 'icon' => Heroicon::OutlinedClipboardDocumentList,
                 'color' => 'warning',
-                'url' => LeadResource::canViewAny() ? route('admin.topbar-alerts.redirect', ['type' => 'leads']) : null,
+                'url' => SupportRequestResource::canViewAny() ? route('admin.topbar-alerts.redirect', ['type' => 'support_requests']) : null,
             ],
             [
                 'type' => 'projects',

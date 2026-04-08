@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->spa()
             ->login(\App\Filament\Pages\Auth\CustomLogin::class)
             ->authGuard('admin')
             ->brandName(\App\Models\SystemSetting::get('app_name', 'Solar BigBang'))
@@ -64,6 +65,10 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::USER_MENU_BEFORE,
                 fn (): string => view('filament.hooks.topbar-admin-alerts')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn (): string => view('filament.hooks.page-load-indicator')->render(),
             )
             ->renderHook(
                 PanelsRenderHook::TOPBAR_END,

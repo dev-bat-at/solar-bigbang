@@ -21,7 +21,7 @@ return [
         // --- Quản lý Nội dung ---
         // \App\Filament\Resources\Posts\PostResource::class,
         // \App\Filament\Resources\Tags\TagResource::class,
-
+        App\Filament\Resources\Leads\LeadResource::class,
         // --- Hệ thống ---
         // \App\Filament\Resources\AdminUsers\AdminUserResource::class,
         // \App\Filament\Resources\Roles\RoleResource::class,
@@ -36,6 +36,6 @@ return [
         //Hệ
 
         // \App\Filament\Resources\SystemTypes\SystemTypeResource::class,
-        
+
     ],
 ];

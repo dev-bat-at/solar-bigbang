@@ -3,11 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Models\SystemSetting;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 
 class SystemSettings extends Page implements HasForms
@@ -15,9 +17,13 @@ class SystemSettings extends Page implements HasForms
     use InteractsWithForms;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+
     protected static ?string $navigationLabel = 'Cấu hình hệ thống';
+
     protected static ?string $title = 'Cấu hình hệ thống';
-    protected static string | \UnitEnum | null $navigationGroup = 'Cấu hình';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Cấu hình';
+
     protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.pages.system-settings';
@@ -26,7 +32,7 @@ class SystemSettings extends Page implements HasForms
 
     public static function shouldRegisterNavigation(): bool
     {
-        return ! in_array(static::class, config('admin_menu.hidden_resources', []));
+        return ! in_array(static::class, config('admin_menu.hidden_resources', []), true);
     }
 
     public static function canAccess(): bool
@@ -49,6 +55,10 @@ class SystemSettings extends Page implements HasForms
             'login_subtitle' => SystemSetting::get('login_subtitle', 'Hệ thống quản lý Solar BigBang'),
             'app_logo' => SystemSetting::get('app_logo'),
             'login_background_image' => SystemSetting::get('login_background_image'),
+            'contact_phone' => SystemSetting::get('contact_phone'),
+            'contact_zalo_link' => SystemSetting::get('contact_zalo_link'),
+            'contact_email' => SystemSetting::get('contact_email'),
+            'contact_business_hours' => SystemSetting::get('contact_business_hours'),
             'timezone' => SystemSetting::get('timezone', 'Asia/Ho_Chi_Minh'),
             'locale' => SystemSetting::get('locale', 'vi'),
             'date_format' => SystemSetting::get('date_format', 'd/m/Y'),
@@ -63,9 +73,9 @@ class SystemSettings extends Page implements HasForms
     {
         return $form
             ->schema([
-                \Filament\Schemas\Components\Tabs::make('settings')
+                Tabs::make('settings')
                     ->tabs([
-                        \Filament\Schemas\Components\Tabs\Tab::make('Thông tin ứng dụng')
+                        Tabs\Tab::make('Thông tin ứng dụng')
                             ->icon('heroicon-o-information-circle')
                             ->schema([
                                 Forms\Components\TextInput::make('app_name')
@@ -92,7 +102,7 @@ class SystemSettings extends Page implements HasForms
                                     ->imageResizeMode('cover')
                                     ->maxSize(5120),
                             ]),
-                        \Filament\Schemas\Components\Tabs\Tab::make('Cấu hình hiển thị')
+                        Tabs\Tab::make('Cấu hình hiển thị')
                             ->icon('heroicon-o-eye')
                             ->schema([
                                 Forms\Components\Select::make('timezone')
@@ -116,7 +126,30 @@ class SystemSettings extends Page implements HasForms
                                     ->label('Định dạng ngày giờ')
                                     ->default('d/m/Y H:i'),
                             ]),
-                        \Filament\Schemas\Components\Tabs\Tab::make('Kỹ thuật')
+                        Tabs\Tab::make('Liên hệ')
+                            ->icon('heroicon-o-phone')
+                            ->schema([
+                                Forms\Components\TextInput::make('contact_phone')
+                                    ->label('Số điện thoại')
+                                    ->tel()
+                                    ->maxLength(255)
+                                    ->placeholder('VD: 0901234567'),
+                                Forms\Components\TextInput::make('contact_zalo_link')
+                                    ->label('Link Zalo')
+                                    ->url()
+                                    ->maxLength(500)
+                                    ->placeholder('VD: https://zalo.me/0901234567'),
+                                Forms\Components\TextInput::make('contact_email')
+                                    ->label('Email liên hệ')
+                                    ->email()
+                                    ->maxLength(255)
+                                    ->placeholder('VD: lienhe@solarbigbang.vn'),
+                                Forms\Components\TextInput::make('contact_business_hours')
+                                    ->label('Giờ làm việc')
+                                    ->maxLength(255)
+                                    ->placeholder('VD: 08:00 - 17:30 - Thứ 2 đến Thứ 7'),
+                            ]),
+                        Tabs\Tab::make('Kỹ thuật')
                             ->icon('heroicon-o-wrench')
                             ->schema([
                                 Forms\Components\Select::make('upload_disk')
@@ -140,8 +173,9 @@ class SystemSettings extends Page implements HasForms
 
         foreach ($data as $key => $value) {
             $group = match (true) {
-                in_array($key, ['app_name', 'app_short_name', 'login_title', 'login_subtitle', 'app_logo', 'login_background_image']) => 'branding',
-                in_array($key, ['timezone', 'locale', 'date_format', 'datetime_format']) => 'display',
+                in_array($key, ['app_name', 'app_short_name', 'login_title', 'login_subtitle', 'app_logo', 'login_background_image'], true) => 'branding',
+                in_array($key, ['contact_phone', 'contact_zalo_link', 'contact_email', 'contact_business_hours'], true) => 'contact',
+                in_array($key, ['timezone', 'locale', 'date_format', 'datetime_format'], true) => 'display',
                 default => 'technical',
             };
 
@@ -164,7 +198,7 @@ class SystemSettings extends Page implements HasForms
     protected function getFormActions(): array
     {
         return [
-            \Filament\Actions\Action::make('save')
+            Action::make('save')
                 ->label('Lưu cấu hình')
                 ->submit('submit'),
         ];

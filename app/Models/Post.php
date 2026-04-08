@@ -23,6 +23,11 @@ class Post extends Model
         return $this->belongsToMany(Tag::class);
     }
 
+    public function author(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'author_id');
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

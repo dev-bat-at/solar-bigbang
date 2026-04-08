@@ -6,5 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class LeadTimeline extends Model
 {
-    //
+    protected $guarded = [];
+
+    protected $casts = [
+        'payload' => 'array',
+    ];
 }

@@ -14,13 +14,30 @@ class Product extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'images'         => 'array',
+        'images' => 'array',
         'specifications' => 'array',
-        'documents'      => 'array',
-        'faqs'           => 'array',
+        'specifications_vi' => 'array',
+        'specifications_en' => 'array',
+        'documents' => 'array',
+        'documents_vi' => 'array',
+        'documents_en' => 'array',
+        'faqs' => 'array',
+        'faqs_vi' => 'array',
+        'faqs_en' => 'array',
         'is_best_seller' => 'boolean',
-        'price'          => 'integer',
+        'is_price_contact' => 'boolean',
+        'price' => 'integer',
     ];
+
+    public function productCategory()
+    {
+        return $this->belongsTo(ProductCategory::class, 'product_category_id');
+    }
+
+    public function productSubcategory()
+    {
+        return $this->belongsTo(ProductCategory::class, 'product_subcategory_id');
+    }
 
     public function getActivitylogOptions(): LogOptions
     {

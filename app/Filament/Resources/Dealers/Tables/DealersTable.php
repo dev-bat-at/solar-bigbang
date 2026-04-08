@@ -18,6 +18,7 @@ class DealersTable
             ->columns([
                 \Filament\Tables\Columns\ImageColumn::make('avatar')
                     ->label('Ảnh')
+                    ->disk('root_public')
                     ->circular(),
                 \Filament\Tables\Columns\TextColumn::make('name')
                     ->label('Tên đại lý')

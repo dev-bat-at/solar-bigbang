@@ -21,6 +21,11 @@ class Customer extends Model
         return $this->belongsTo(Dealer::class);
     }
 
+    public function systemType()
+    {
+        return $this->belongsTo(SystemType::class);
+    }
+
     /**
      * Các lead của khách hàng.
      */

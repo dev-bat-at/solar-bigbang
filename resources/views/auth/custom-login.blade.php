@@ -8,7 +8,10 @@
             min-height: 100vh;
             width: 100%;
             overflow: hidden;
-            font-family: sans-serif;
+            font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             background: #0f172a;
         }
 
@@ -72,6 +75,11 @@
             padding: 2rem 1.5rem 1.6rem;
         }
 
+        .login-card,
+        .login-card * {
+            font-family: inherit;
+        }
+
         .login-branding {
             display: flex;
             flex-direction: column;
@@ -91,24 +99,28 @@
         .login-site-name {
             margin: 0;
             color: #0f172a;
-            font-size: 2rem;
+            font-size: 1.95rem;
             font-weight: 800;
-            letter-spacing: -0.03em;
+            line-height: 1.05;
+            letter-spacing: -0.04em;
         }
 
         .login-title {
             margin: 0;
             color: #0f172a;
-            font-size: 1.75rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
+            font-size: 1.6rem;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.035em;
         }
 
         .login-subtitle {
             margin: 0.45rem 0 0;
             color: #64748b;
             font-size: 0.95rem;
-            line-height: 1.6;
+            font-weight: 500;
+            line-height: 1.7;
+            letter-spacing: -0.01em;
         }
 
         .login-form {
@@ -135,6 +147,7 @@
             text-align: center;
             color: #64748b;
             font-size: 0.875rem;
+            font-weight: 500;
         }
 
         .login-register-link {
@@ -175,19 +188,19 @@
 
         .login-copy-kicker {
             margin: 0 0 1rem;
-            font-size: 0.92rem;
+            font-size: 0.82rem;
             font-weight: 700;
-            letter-spacing: 0.28em;
+            letter-spacing: 0.22em;
             text-transform: uppercase;
             color: rgba(255, 255, 255, 0.78);
         }
 
         .login-copy-title {
             margin: 0;
-            font-size: clamp(2.2rem, 4.2vw, 4.4rem);
-            font-weight: 900;
-            line-height: 0.96;
-            text-transform: uppercase;
+            font-size: clamp(2.15rem, 4.2vw, 4.2rem);
+            font-weight: 800;
+            line-height: 0.98;
+            letter-spacing: -0.045em;
             text-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
         }
 
@@ -196,7 +209,9 @@
             max-width: 30rem;
             color: rgba(255, 255, 255, 0.92);
             font-size: 1rem;
-            line-height: 1.8;
+            font-weight: 500;
+            line-height: 1.75;
+            letter-spacing: -0.012em;
         }
 
         .login-copy-outline {
@@ -225,8 +240,16 @@
         .fi-fo-field-wrp-label span {
             color: #334155 !important;
             font-weight: 600 !important;
+            letter-spacing: -0.01em;
             opacity: 1 !important;
             visibility: visible !important;
+        }
+
+        .fi-input,
+        .fi-input input,
+        .fi-btn,
+        .fi-simple-page-form {
+            font-family: inherit !important;
         }
 
         .fi-input,

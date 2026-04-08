@@ -1,0 +1,803 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Solar BigBang API Docs",
+        "version": "1.0.0",
+        "description": "Tai lieu API tu sinh cho he thong Solar BigBang."
+    },
+    "servers": [
+        {
+            "url": "http://192.168.1.35:8000/api"
+        }
+    ],
+    "tags": [
+        {
+            "name": "C\u1ea5u h\u00ecnh chung",
+            "description": "C\u00e1c API c\u1ea5u h\u00ecnh c\u00f4ng khai cho mobile/web."
+        },
+        {
+            "name": "T\u1ec9nh th\u00e0nh",
+            "description": "Danh s\u00e1ch t\u1ec9nh/th\u00e0nh ph\u1ee5c v\u1ee5 \u0111\u0103ng k\u00fd ng\u01b0\u1eddi d\u00f9ng."
+        },
+        {
+            "name": "X\u00e1c th\u1ef1c ng\u01b0\u1eddi d\u00f9ng",
+            "description": "\u0110\u0103ng k\u00fd v\u00e0 \u0111\u0103ng nh\u1eadp t\u00e0i kho\u1ea3n ng\u01b0\u1eddi d\u00f9ng b\u1eb1ng email ho\u1eb7c s\u1ed1 \u0111i\u1ec7n tho\u1ea1i."
+        }
+    ],
+    "security": [
+        {
+            "ApiKeyAuth": []
+        }
+    ],
+    "paths": {
+        "/config/contact": {
+            "get": {
+                "operationId": "getContactConfig",
+                "description": "Tr\u1ea3 v\u1ec1 s\u1ed1 \u0111i\u1ec7n tho\u1ea1i, link Zalo, email v\u00e0 gi\u1edd l\u00e0m vi\u1ec7c c\u1ee7a c\u00f4ng ty.",
+                "summary": "L\u1ea5y c\u1ea5u h\u00ecnh li\u00ean h\u1ec7",
+                "tags": [
+                    "C\u1ea5u h\u00ecnh chung"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/provinces": {
+            "get": {
+                "operationId": "listProvinces",
+                "description": "Tr\u1ea3 v\u1ec1 danh s\u00e1ch t\u1ec9nh/th\u00e0nh \u0111ang ho\u1ea1t \u0111\u1ed9ng \u0111\u1ec3 client hi\u1ec3n th\u1ecb cho ng\u01b0\u1eddi d\u00f9ng ch\u1ecdn.",
+                "summary": "L\u1ea5y danh s\u00e1ch t\u1ec9nh th\u00e0nh",
+                "tags": [
+                    "T\u1ec9nh th\u00e0nh"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/provinces/{province}": {
+            "get": {
+                "operationId": "getProvince",
+                "description": "Tr\u1ea3 v\u1ec1 th\u00f4ng tin chi ti\u1ebft c\u1ee7a m\u1ed9t t\u1ec9nh/th\u00e0nh theo ID.",
+                "summary": "L\u1ea5y chi ti\u1ebft t\u1ec9nh th\u00e0nh",
+                "tags": [
+                    "T\u1ec9nh th\u00e0nh"
+                ],
+                "parameters": [
+                    {
+                        "name": "province",
+                        "in": "path",
+                        "required": true,
+                        "description": "The province ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "operationId": "registerUser",
+                "description": "T\u1ea1o m\u1edbi t\u00e0i kho\u1ea3n ng\u01b0\u1eddi d\u00f9ng v\u1edbi s\u1ed1 \u0111i\u1ec7n tho\u1ea1i, email, m\u1eadt kh\u1ea9u v\u00e0 t\u1ec9nh/th\u00e0nh.",
+                "summary": "\u0110\u0103ng k\u00fd ng\u01b0\u1eddi d\u00f9ng",
+                "tags": [
+                    "X\u00e1c th\u1ef1c ng\u01b0\u1eddi d\u00f9ng"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "operationId": "loginUser",
+                "description": "\u0110\u0103ng nh\u1eadp b\u1eb1ng tr\u01b0\u1eddng login, c\u00f3 th\u1ec3 truy\u1ec1n email ho\u1eb7c s\u1ed1 \u0111i\u1ec7n tho\u1ea1i c\u00f9ng m\u1eadt kh\u1ea9u.",
+                "summary": "\u0110\u0103ng nh\u1eadp ng\u01b0\u1eddi d\u00f9ng",
+                "tags": [
+                    "X\u00e1c th\u1ef1c ng\u01b0\u1eddi d\u00f9ng"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "title": {
+                                            "type": "string",
+                                            "const": "\u0110\u0103ng nh\u1eadp th\u1ea5t b\u1ea1i"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Th\u00f4ng tin \u0111\u0103ng nh\u1eadp kh\u00f4ng ch\u00ednh x\u00e1c."
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "title",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "operationId": "getAuthenticatedUser",
+                "description": "D\u00f9ng Bearer token v\u1eeba \u0111\u0103ng nh\u1eadp \u0111\u1ec3 l\u1ea5y l\u1ea1i h\u1ed3 s\u01a1 ng\u01b0\u1eddi d\u00f9ng.",
+                "summary": "L\u1ea5y th\u00f4ng tin ng\u01b0\u1eddi d\u00f9ng hi\u1ec7n t\u1ea1i",
+                "tags": [
+                    "X\u00e1c th\u1ef1c ng\u01b0\u1eddi d\u00f9ng"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {}
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": [],
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/quote/calculate": {
+            "post": {
+                "operationId": "quote.calculate",
+                "tags": [
+                    "QuoteCalculator"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "system_type_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "system_type_slug": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "phase_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "1P",
+                                            "3P"
+                                        ]
+                                    },
+                                    "monthly_bill": {
+                                        "type": "number",
+                                        "minimum": 1
+                                    },
+                                    "day_ratio": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ],
+                                        "minimum": 0,
+                                        "maximum": 100
+                                    },
+                                    "night_ratio": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ],
+                                        "minimum": 0,
+                                        "maximum": 100
+                                    }
+                                },
+                                "required": [
+                                    "phase_type",
+                                    "monthly_bill"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "system_type": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "slug": {
+                                                    "type": "string"
+                                                },
+                                                "formula_type": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "slug",
+                                                "formula_type"
+                                            ]
+                                        },
+                                        "input": {
+                                            "type": "object",
+                                            "properties": {
+                                                "phase_type": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "monthly_bill": {
+                                                    "type": "number"
+                                                },
+                                                "day_ratio": {
+                                                    "type": "number"
+                                                },
+                                                "night_ratio": {
+                                                    "type": "number"
+                                                }
+                                            },
+                                            "required": [
+                                                "phase_type",
+                                                "monthly_bill",
+                                                "day_ratio",
+                                                "night_ratio"
+                                            ]
+                                        },
+                                        "result": {
+                                            "type": "object",
+                                            "properties": {
+                                                "recommended_kwp": {
+                                                    "type": "number"
+                                                },
+                                                "price_per_kw": {
+                                                    "type": "number"
+                                                },
+                                                "investment_cost": {
+                                                    "type": "number"
+                                                },
+                                                "estimated_monthly_saving": {
+                                                    "type": "number"
+                                                },
+                                                "battery_capacity": {
+                                                    "type": [
+                                                        "number",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "battery_price": {
+                                                    "type": [
+                                                        "number",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "solar_price": {
+                                                    "type": [
+                                                        "number",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "recommended_kwp",
+                                                "price_per_kw",
+                                                "investment_cost",
+                                                "estimated_monthly_saving",
+                                                "battery_capacity",
+                                                "battery_price",
+                                                "solar_price"
+                                            ]
+                                        },
+                                        "suggestion": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "panel_model": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "panel_watt": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "panel_count": {
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "inverter_model": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "inverter_kw": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "battery_model": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "battery_kwh": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "note": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "panel_model",
+                                                        "panel_watt",
+                                                        "panel_count",
+                                                        "inverter_model",
+                                                        "inverter_kw",
+                                                        "battery_model",
+                                                        "battery_kwh",
+                                                        "note"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "panel_model": {
+                                                            "type": "null"
+                                                        },
+                                                        "panel_watt": {
+                                                            "type": "null"
+                                                        },
+                                                        "panel_count": {
+                                                            "type": "null"
+                                                        },
+                                                        "inverter_model": {
+                                                            "type": "null"
+                                                        },
+                                                        "inverter_kw": {
+                                                            "type": "null"
+                                                        },
+                                                        "battery_model": {
+                                                            "type": "null"
+                                                        },
+                                                        "battery_kwh": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "note": {
+                                                            "type": "null"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "panel_model",
+                                                        "panel_watt",
+                                                        "panel_count",
+                                                        "inverter_model",
+                                                        "inverter_kw",
+                                                        "battery_model",
+                                                        "battery_kwh",
+                                                        "note"
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        "breakdown": {
+                                            "type": "object",
+                                            "properties": {
+                                                "settings": {
+                                                    "type": "array",
+                                                    "prefixItems": [
+                                                        {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "electric_price": {
+                                                                            "type": "integer",
+                                                                            "const": 2500
+                                                                        },
+                                                                        "yield": {
+                                                                            "type": "integer",
+                                                                            "const": 120
+                                                                        },
+                                                                        "market_factor": {
+                                                                            "type": "integer",
+                                                                            "const": 1
+                                                                        },
+                                                                        "k_factor": {
+                                                                            "type": "integer",
+                                                                            "const": 1
+                                                                        },
+                                                                        "day_ratio_default": {
+                                                                            "anyOf": [
+                                                                                {
+                                                                                    "type": "null"
+                                                                                },
+                                                                                {
+                                                                                    "type": "object"
+                                                                                },
+                                                                                {
+                                                                                    "type": "number",
+                                                                                    "const": 0.6
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        "saving_factor": {
+                                                                            "type": "integer",
+                                                                            "const": 1
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "electric_price",
+                                                                        "yield",
+                                                                        "market_factor",
+                                                                        "k_factor",
+                                                                        "day_ratio_default",
+                                                                        "saving_factor"
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "electric_price": {
+                                                                            "type": "integer",
+                                                                            "const": 2800
+                                                                        },
+                                                                        "yield": {
+                                                                            "type": "integer",
+                                                                            "const": 135
+                                                                        },
+                                                                        "market_factor": {
+                                                                            "type": "integer",
+                                                                            "const": 1
+                                                                        },
+                                                                        "battery_price_per_kwh": {
+                                                                            "type": "integer",
+                                                                            "const": 2500000
+                                                                        },
+                                                                        "backup_hours": {
+                                                                            "type": "integer",
+                                                                            "const": 1
+                                                                        },
+                                                                        "day_ratio_default": {
+                                                                            "type": "number",
+                                                                            "const": 0.5
+                                                                        },
+                                                                        "saving_factor": {
+                                                                            "type": "integer",
+                                                                            "const": 1
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "electric_price",
+                                                                        "yield",
+                                                                        "market_factor",
+                                                                        "battery_price_per_kwh",
+                                                                        "backup_hours",
+                                                                        "day_ratio_default",
+                                                                        "saving_factor"
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "minItems": 0,
+                                                                    "maxItems": 0,
+                                                                    "additionalItems": false
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        }
+                                                    ],
+                                                    "minItems": 2,
+                                                    "maxItems": 2,
+                                                    "additionalItems": false
+                                                },
+                                                "matched_price_tier": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                }
+                                            },
+                                            "required": [
+                                                "settings",
+                                                "matched_price_tier"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "system_type",
+                                        "input",
+                                        "result",
+                                        "suggestion",
+                                        "breakdown"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "ApiKeyAuth": {
+                "type": "apiKey",
+                "description": "Header API key b\u1eaft bu\u1ed9c cho to\u00e0n b\u1ed9 API.",
+                "in": "header",
+                "name": "X-API-KEY"
+            },
+            "BearerAuth": {
+                "type": "http",
+                "description": "Bearer access token nh\u1eadn \u0111\u01b0\u1ee3c sau khi \u0111\u0103ng nh\u1eadp.",
+                "scheme": "bearer",
+                "bearerFormat": "Bearer"
+            }
+        },
+        "schemas": {
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "login",
+                    "password"
+                ],
+                "title": "LoginRequest"
+            },
+            "RegisterRequest": {
+                "type": "object",
+                "properties": {
+                    "phone": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "province_id": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "phone",
+                    "email",
+                    "password",
+                    "province_id"
+                ],
+                "title": "RegisterRequest"
+            }
+        },
+        "responses": {
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
