@@ -2,25 +2,44 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Support\Media\PublicAsset;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
-class Dealer extends Model
+class Dealer extends Authenticatable
 {
-    use SoftDeletes, LogsActivity;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, LogsActivity;
 
     protected $guarded = [];
-
-    protected $casts = [
-        'coverage_area' => 'array',
-    ];
 
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'coverage_area' => 'array',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+
+    public function getAvatarAttribute(?string $value): ?string
+    {
+        return PublicAsset::normalizePath($value);
+    }
+
+    public function setAvatarAttribute(?string $value): void
+    {
+        $this->attributes['avatar'] = PublicAsset::normalizePath($value);
+    }
 
     /**
      * Khách hàng thuộc đại lý này.
@@ -44,6 +63,11 @@ class Dealer extends Model
     public function projects()
     {
         return $this->hasMany(Project::class);
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(DealerNotification::class);
     }
 
     public function getActivitylogOptions(): LogOptions

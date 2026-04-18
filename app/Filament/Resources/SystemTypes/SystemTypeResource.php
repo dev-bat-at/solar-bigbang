@@ -32,7 +32,7 @@ class SystemTypeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?string $recordTitleAttribute = 'name_vi';
 
     protected static function moneyMask(): RawJs
     {
@@ -53,27 +53,42 @@ class SystemTypeResource extends Resource
                                     ->columnSpanFull()
                                     ->schema([
                                         Forms\Components\TextInput::make('name')
-                                            ->label('Tên hệ')
+                                            ->label('Tên hệ (cũ)')
+                                            ->disabled()
+                                            ->dehydrated(false),
+                                        Forms\Components\TextInput::make('name_vi')
+                                            ->label('Tên hệ (Tiếng Việt)')
                                             ->required()
                                             ->maxLength(255)
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(fn (string $operation, $state, $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
+                                        Forms\Components\TextInput::make('name_en')
+                                            ->label('Tên hệ (Tiếng Anh)')
+                                            ->required()
+                                            ->maxLength(255),
                                         Forms\Components\TextInput::make('slug')
                                             ->label('Slug')
                                             ->required()
                                             ->maxLength(255)
                                             ->unique(SystemType::class, 'slug', ignoreRecord: true),
-                                        Forms\Components\Textarea::make('description')
-                                            ->label('Mô tả')
+                                        Forms\Components\Textarea::make('description_vi')
+                                            ->label('Mô tả (Tiếng Việt)')
                                             ->rows(3)
-                                            ->columnSpanFull(),
+                                            ->columnSpanFull()
+                                            ->required(),
+                                        Forms\Components\Textarea::make('description_en')
+                                            ->label('Mô tả (Tiếng Anh)')
+                                            ->rows(3)
+                                            ->columnSpanFull()
+                                            ->required(),
                                         Forms\Components\Select::make('quote_formula_type')
                                             ->label('Loại công thức báo giá')
                                             ->options([
-                                                'bam_tai' => 'Bám tải',
+                                                'bam_tai' => 'Hòa lưới',
                                                 'hybrid' => 'Hybrid',
+                                                'solar_pump' => 'Solar Pump',
                                             ])
-                                            ->helperText('Chọn đúng loại hệ để frontend dùng công thức phù hợp.')
+                                            ->helperText('Ví dụ hệ hòa lưới thì chọn "Hòa lưới" để dùng đúng công thức tiền điện, tỷ lệ ban ngày và đơn giá theo kW.')
                                             ->live()
                                             ->columnSpan(1),
                                         Forms\Components\Toggle::make('quote_is_active')
@@ -90,45 +105,43 @@ class SystemTypeResource extends Resource
                             ->icon('heroicon-o-calculator')
                             ->schema([
                                 Section::make('Hằng số & tham số công thức')
-                                    ->description('Các giá trị này được dùng để tính công suất đề xuất, chi phí đầu tư và tiết kiệm/tháng.')
+                                    ->description('Với hệ hòa lưới, admin chỉ cần nhập giá 1 số điện, sản lượng trung bình của 1kW/tháng, hệ số điều chỉnh thời giá và tỷ lệ ban ngày mặc định. Phần sản phẩm liên quan sẽ lấy trực tiếp từ danh sách Products theo công suất gần nhất.')
                                     ->columnSpanFull()
                                     ->schema([
                                         Forms\Components\TextInput::make('quote_settings.electric_price')
-                                            ->label('Giá điện quy đổi (VNĐ/kWh)')
+                                            ->label('Giá 1 số điện trung bình (đồng)')
                                             ->mask(static::moneyMask())
                                             ->stripCharacters('.')
                                             ->numeric()
-                                            ->default(2500)
+                                            ->default(2200)
+                                            ->helperText('Ví dụ nhập 2200.')
                                             ->required(),
                                         Forms\Components\TextInput::make('quote_settings.yield')
-                                            ->label('Sản lượng quy đổi / kWp')
+                                            ->label('Sản lượng trung bình của bộ 1kW mỗi tháng (số điện)')
                                             ->numeric()
                                             ->default(120)
+                                            ->helperText('Ví dụ nhập 120.')
                                             ->required(),
                                         Forms\Components\TextInput::make('quote_settings.market_factor')
-                                            ->label('Hệ số thị trường')
+                                            ->label('Hệ số điều chỉnh theo thời giá')
                                             ->numeric()
                                             ->default(1)
                                             ->step('0.01')
+                                            ->helperText('Mặc định nhập 1.0. Nếu giá thị trường tăng 10% thì nhập 1.1.')
                                             ->required(),
                                         Forms\Components\TextInput::make('quote_settings.saving_factor')
                                             ->label('Hệ số tiết kiệm/tháng')
                                             ->numeric()
                                             ->default(1)
                                             ->step('0.01')
-                                            ->helperText('Cho phép hiệu chỉnh số tiết kiệm ước tính.'),
-                                        Forms\Components\TextInput::make('quote_settings.k_factor')
-                                            ->label('K factor')
-                                            ->numeric()
-                                            ->default(1)
-                                            ->step('0.01')
-                                            ->visible(fn ($get) => $get('quote_formula_type') === 'bam_tai'),
+                                            ->helperText('Có thể để 1.0 nếu chỉ cần ra công suất và chi phí dự kiến.')
+                                            ->visible(fn ($get) => $get('quote_formula_type') !== 'bam_tai'),
                                         Forms\Components\TextInput::make('quote_settings.day_ratio_default')
-                                            ->label('Tỉ lệ ngày mặc định')
+                                            ->label('Tỷ lệ dùng điện ban ngày mặc định (%)')
                                             ->numeric()
-                                            ->default(0.5)
+                                            ->default(70)
                                             ->step('0.01')
-                                            ->helperText('Nhập dạng 0.5 hoặc 50.')
+                                            ->helperText('Nhập 30 đến 80. Nếu frontend không truyền, hệ thống sẽ dùng giá trị này.')
                                             ->visible(fn ($get) => in_array($get('quote_formula_type'), ['bam_tai', 'hybrid'], true)),
                                         Forms\Components\TextInput::make('quote_settings.battery_price_per_kwh')
                                             ->label('Giá pin lưu trữ / kWh')
@@ -151,7 +164,7 @@ class SystemTypeResource extends Resource
                             ->icon('heroicon-o-banknotes')
                             ->schema([
                                 Section::make('Mốc giá / kWp')
-                                    ->description('Khi hệ tính ra kWp đề xuất, hệ thống sẽ dò bảng này để lấy đơn giá phù hợp.')
+                                    ->description('Nhập đơn giá theo loại điện và khoảng công suất. Ví dụ 1 pha dưới 10kW là 7.000.000 đồng/kW.')
                                     ->columnSpanFull()
                                     ->schema([
                                         Forms\Components\Repeater::make('quote_price_tiers')
@@ -184,69 +197,10 @@ class SystemTypeResource extends Resource
                                                     ->mask(static::moneyMask())
                                                     ->stripCharacters('.')
                                                     ->numeric()
+                                                    ->helperText('Ví dụ 7000000, 6800000, 6200000.')
                                                     ->required(),
                                             ])
                                             ->columns(4)
-                                            ->columnSpanFull(),
-                                    ]),
-                            ]),
-
-                        \Filament\Schemas\Components\Tabs\Tab::make('Cấu hình gợi ý')
-                            ->icon('heroicon-o-light-bulb')
-                            ->schema([
-                                Section::make('Thiết bị gợi ý theo mốc')
-                                    ->description('Frontend dùng dữ liệu này để hiển thị số tấm pin, inverter và pin lưu trữ gợi ý.')
-                                    ->columnSpanFull()
-                                    ->schema([
-                                        Forms\Components\Repeater::make('quote_recommendations')
-                                            ->label('Bảng cấu hình gợi ý')
-                                            ->defaultItems(0)
-                                            ->reorderable()
-                                            ->cloneable()
-                                            ->collapsed()
-                                            ->addActionLabel('Thêm cấu hình gợi ý')
-                                            ->schema([
-                                                Forms\Components\Select::make('phase_type')
-                                                    ->label('Loại điện')
-                                                    ->options([
-                                                        'ALL' => 'Dùng chung',
-                                                        '1P' => '1 pha',
-                                                        '3P' => '3 pha',
-                                                    ])
-                                                    ->default('ALL')
-                                                    ->required(),
-                                                Forms\Components\TextInput::make('min_kw')
-                                                    ->label('Từ kWp')
-                                                    ->numeric()
-                                                    ->required(),
-                                                Forms\Components\TextInput::make('max_kw')
-                                                    ->label('Đến kWp')
-                                                    ->numeric(),
-                                                Forms\Components\TextInput::make('panel_model')
-                                                    ->label('Model tấm pin'),
-                                                Forms\Components\TextInput::make('panel_watt')
-                                                    ->label('Watt / tấm')
-                                                    ->numeric(),
-                                                Forms\Components\TextInput::make('panel_count')
-                                                    ->label('Số tấm cố định')
-                                                    ->numeric()
-                                                    ->helperText('Để trống để hệ thống tự tính từ kWp và Watt/tấm.'),
-                                                Forms\Components\TextInput::make('inverter_model')
-                                                    ->label('Model inverter'),
-                                                Forms\Components\TextInput::make('inverter_kw')
-                                                    ->label('Công suất inverter')
-                                                    ->numeric(),
-                                                Forms\Components\TextInput::make('battery_model')
-                                                    ->label('Model pin lưu trữ'),
-                                                Forms\Components\TextInput::make('battery_kwh')
-                                                    ->label('Dung lượng pin')
-                                                    ->numeric(),
-                                                Forms\Components\Textarea::make('note')
-                                                    ->label('Ghi chú')
-                                                    ->rows(2)
-                                                    ->columnSpanFull(),
-                                            ])
-                                            ->columns(3)
                                             ->columnSpanFull(),
                                     ]),
                             ]),
@@ -258,22 +212,28 @@ class SystemTypeResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('name')
+            ->recordTitleAttribute('name_vi')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Tên hệ')
+                    ->formatStateUsing(fn ($state, $record): string => $record->name_vi ?: $state)
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('name_en')
+                    ->label('Tên EN')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('quote_formula_type')
                     ->label('Công thức')
                     ->badge()
                     ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'bam_tai' => 'Bám tải',
+                        'bam_tai' => 'Hòa lưới',
                         'hybrid' => 'Hybrid',
+                        'solar_pump' => 'Solar Pump',
                         default => 'Chưa cấu hình',
                     })
                     ->color(fn (?string $state): string => match ($state) {
                         'bam_tai' => 'warning',
                         'hybrid' => 'info',
+                        'solar_pump' => 'success',
                         default => 'gray',
                     }),
                 Tables\Columns\IconColumn::make('quote_is_active')

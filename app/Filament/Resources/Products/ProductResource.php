@@ -71,8 +71,8 @@ class ProductResource extends Resource
             ->whereNull('parent_id')
             ->where('is_active', true)
             ->orderBy('sort_order')
-            ->orderBy('name')
-            ->pluck('name', 'id')
+            ->orderBy('name_vi')
+            ->pluck('name_vi', 'id')
             ->all();
     }
 
@@ -98,8 +98,8 @@ class ProductResource extends Resource
             ->where('parent_id', $categoryId)
             ->where('is_active', true)
             ->orderBy('sort_order')
-            ->orderBy('name')
-            ->pluck('name', 'id')
+            ->orderBy('name_vi')
+            ->pluck('name_vi', 'id')
             ->all();
     }
 
@@ -233,7 +233,11 @@ class ProductResource extends Resource
                             Section::make('Thông số kỹ thuật chính')
                                 ->columnSpanFull()
                                 ->schema([
-                                    TextInput::make('power')->label('Công suất')->required()->maxLength(100),
+                                    TextInput::make('power')
+                                        ->label('Công suất')
+                                        ->helperText('Nhập rõ như 5kW, 5.5kW, 10kW, 550Wp. Nếu là sản phẩm 3 pha hoặc 1 pha, nên ghi rõ trong tên hoặc tagline để hệ thống lọc đúng.')
+                                        ->required()
+                                        ->maxLength(100),
                                     TextInput::make('efficiency')->label('Hiệu suất')->required()->maxLength(100),
                                     TextInput::make('warranty_vi')->label('Bảo hành (Tiếng Việt)')->required()->maxLength(100),
                                     TextInput::make('warranty_en')->label('Bảo hành (Tiếng Anh)')->required()->maxLength(100),
@@ -347,8 +351,8 @@ class ProductResource extends Resource
                         }),
                     TextEntry::make('name_vi')->label('Tên (Tiếng Việt)'),
                     TextEntry::make('name_en')->label('Tên (Tiếng Anh)'),
-                    TextEntry::make('productCategory.name')->label('Loại sản phẩm')->placeholder('—'),
-                    TextEntry::make('productSubcategory.name')->label('Danh mục con')->placeholder('—'),
+                    TextEntry::make('productCategory.name_vi')->label('Loại sản phẩm')->placeholder('—'),
+                    TextEntry::make('productSubcategory.name_vi')->label('Danh mục con')->placeholder('—'),
                     TextEntry::make('slug')->label('Slug'),
                     IconEntry::make('is_best_seller')->label('Bán chạy')->boolean(),
                     TextEntry::make('tagline_vi')->label('Tagline (Tiếng Việt)')->placeholder('Chưa có')->columnSpanFull(),
@@ -416,8 +420,8 @@ class ProductResource extends Resource
             ->columns([
                 TextColumn::make('code')->label('Mã SP')->searchable()->badge()->color('info'),
                 TextColumn::make('name_vi')->label('Tên sản phẩm')->searchable()->sortable(),
-                TextColumn::make('productCategory.name')->label('Loại')->searchable()->sortable()->badge(),
-                TextColumn::make('productSubcategory.name')->label('Mục con')->searchable()->sortable()->placeholder('—')->toggleable(),
+                TextColumn::make('productCategory.name_vi')->label('Loại')->searchable()->sortable()->badge(),
+                TextColumn::make('productSubcategory.name_vi')->label('Mục con')->searchable()->sortable()->placeholder('—')->toggleable(),
                 TextColumn::make('price')->label('Giá')->formatStateUsing(fn ($state, $record) => $record->is_price_contact ? 'Liên hệ' : ($state ? number_format($state, 0, ',', '.') . ' đ' : '—'))->sortable(),
                 TextColumn::make('power')->label('Công suất')->searchable()->toggleable(),
                 TextColumn::make('status')
@@ -442,13 +446,13 @@ class ProductResource extends Resource
             ->filters([
                 SelectFilter::make('product_category_id')
                     ->label('Loại sản phẩm')
-                    ->relationship('productCategory', 'name')
+                    ->relationship('productCategory', 'name_vi')
                     ->searchable()
                     ->preload()
                     ->placeholder('Tất cả'),
                 SelectFilter::make('product_subcategory_id')
                     ->label('Danh mục con')
-                    ->relationship('productSubcategory', 'name')
+                    ->relationship('productSubcategory', 'name_vi')
                     ->searchable()
                     ->preload()
                     ->placeholder('Tất cả'),

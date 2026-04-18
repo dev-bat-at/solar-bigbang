@@ -4,8 +4,6 @@ namespace App\Http\Resources\Api;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
-
 class PostDetailResource extends JsonResource
 {
     /**
@@ -28,10 +26,10 @@ class PostDetailResource extends JsonResource
                 return [
                     'id' => $this->author->id,
                     'name' => $this->author->name,
-                    'avatar' => $this->author->avatar_url ? asset('storage/' . $this->author->avatar_url) : null,
+                    'avatar' => $this->author->avatar_url ? asset($this->author->avatar_url) : null,
                 ];
             }),
-            'tags' => TagResource::collection($this->whenLoaded('tags')),
+            'tag' => $this->whenLoaded('tag', fn () => new TagResource($this->tag)),
             // 'seo_title' => $this->seo_title,
             // 'seo_description' => $this->seo_description,
             // 'seo_keywords' => $this->seo_keywords,

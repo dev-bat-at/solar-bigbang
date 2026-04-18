@@ -11,53 +11,89 @@ class ProductCategorySeeder extends Seeder
     {
         $categories = [
             [
-                'name' => 'Tấm pin năng lượng mặt trời',
-                'slug' => 'tam-pin-nang-luong-mat-troi',
+                'name_vi' => 'Tấm pin',
+                'name_en' => 'Solar Panel',
+                'slug' => 'tam-pin',
                 'sort_order' => 1,
-                'children' => [
-                    ['name' => 'Panel Mono', 'slug' => 'panel-mono', 'sort_order' => 1],
-                    ['name' => 'Panel N-Type', 'slug' => 'panel-n-type', 'sort_order' => 2],
-                ],
+                'children' => [],
             ],
             [
-                'name' => 'Inverter',
-                'slug' => 'inverter',
+                'name_vi' => 'Lưu trữ',
+                'name_en' => 'Storage',
+                'slug' => 'luu-tru',
                 'sort_order' => 2,
-                'children' => [
-                    ['name' => 'Inverter Hybrid', 'slug' => 'inverter-hybrid', 'sort_order' => 1],
-                    ['name' => 'Inverter Hòa lưới', 'slug' => 'inverter-hoa-luoi', 'sort_order' => 2],
-                ],
+                'children' => [],
             ],
             [
-                'name' => 'Phụ kiện',
-                'slug' => 'phu-kien',
+                'name_vi' => 'Biến tần bơm',
+                'name_en' => 'Pump Inverter',
+                'slug' => 'bien-tan-bom',
                 'sort_order' => 3,
                 'children' => [],
             ],
+            [
+                'name_vi' => 'Inverter',
+                'name_en' => 'Inverter',
+                'slug' => 'inverter',
+                'sort_order' => 4,
+                'children' => [
+                    ['name_vi' => 'Hybrid', 'name_en' => 'Hybrid', 'slug' => 'inverter-hybrid', 'sort_order' => 1],
+                    ['name_vi' => 'On Grid', 'name_en' => 'On Grid', 'slug' => 'inverter-on-grid', 'sort_order' => 2],
+                ],
+            ],
         ];
 
+        $allSlugs = collect($categories)
+            ->flatMap(fn (array $category): array => [
+                $category['slug'],
+                ...collect($category['children'] ?? [])->pluck('slug')->all(),
+            ])
+            ->all();
+
+        ProductCategory::query()->whereNotIn('slug', $allSlugs)->delete();
+
         foreach ($categories as $categoryData) {
-            $category = ProductCategory::query()->updateOrCreate(
+            $category = ProductCategory::withTrashed()->updateOrCreate(
                 ['slug' => $categoryData['slug']],
                 [
                     'parent_id' => null,
-                    'name' => $categoryData['name'],
+                    'name' => $categoryData['name_vi'],
+                    'name_vi' => $categoryData['name_vi'],
+                    'name_en' => $categoryData['name_en'],
                     'is_active' => true,
                     'sort_order' => $categoryData['sort_order'],
                 ]
             );
 
+            if ($category->trashed()) {
+                $category->restore();
+            }
+
             foreach ($categoryData['children'] as $childData) {
-                ProductCategory::query()->updateOrCreate(
+                $child = ProductCategory::withTrashed()->updateOrCreate(
                     ['slug' => $childData['slug']],
                     [
                         'parent_id' => $category->id,
-                        'name' => $childData['name'],
+                        'name' => $childData['name_vi'],
+                        'name_vi' => $childData['name_vi'],
+                        'name_en' => $childData['name_en'],
                         'is_active' => true,
                         'sort_order' => $childData['sort_order'],
                     ]
                 );
+
+                if ($child->trashed()) {
+                    $child->restore();
+                }
             }
+
+            $childSlugs = collect($categoryData['children'])->pluck('slug')->all();
+
+            ProductCategory::query()
+                ->where('parent_id', $category->id)
+                ->when($childSlugs !== [], fn ($query) => $query->whereNotIn('slug', $childSlugs))
+                ->when($childSlugs === [], fn ($query) => $query)
+                ->delete();
         }
     }
 }

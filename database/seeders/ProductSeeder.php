@@ -12,8 +12,7 @@ class ProductSeeder extends Seeder
     {
         $this->call(ProductCategorySeeder::class);
 
-        $panelCategory = ProductCategory::query()->where('slug', 'tam-pin-nang-luong-mat-troi')->first();
-        $panelSubcategory = ProductCategory::query()->where('slug', 'panel-n-type')->first();
+        $panelCategory = ProductCategory::query()->where('slug', 'tam-pin')->first();
         $inverterCategory = ProductCategory::query()->where('slug', 'inverter')->first();
         $inverterSubcategory = ProductCategory::query()->where('slug', 'inverter-hybrid')->first();
 
@@ -22,7 +21,7 @@ class ProductSeeder extends Seeder
                 'code' => 'SP-JINKO-550',
                 'slug' => 'tam-pin-nang-luong-mat-troi-jinko-solar-550w',
                 'product_category_id' => $panelCategory?->id,
-                'product_subcategory_id' => $panelSubcategory?->id,
+                'product_subcategory_id' => null,
                 'name_vi' => 'Tấm pin năng lượng mặt trời Jinko Solar 550W',
                 'name_en' => 'Jinko Solar Panel 550W',
                 'tagline_vi' => 'Công nghệ N-Type hiệu suất cao, bảo hành 25 năm',
@@ -38,7 +37,8 @@ class ProductSeeder extends Seeder
                 'price_unit_en' => 'VND / Panel',
                 'power' => '550Wp',
                 'efficiency' => '21.3%',
-                'warranty' => '25 năm',
+                'warranty_vi' => '25 năm',
+                'warranty_en' => '25 years',
                 'description_vi' => '<h2>Tấm Pin Jinko 550Wp N-Type</h2><p>Tấm pin năng lượng mặt trời Jinko 550Wp sử dụng công nghệ N-Type tiên tiến, đem lại hiệu suất vượt trội và tổn hao năng lượng cực thấp. Đây là sự lựa chọn hàng đầu cho các dự án điện mặt trời dân dụng và công nghiệp.</p>',
                 'description_en' => '<h2>Jinko 550Wp N-Type Solar Panel</h2><p>Jinko 550Wp solar panel uses advanced N-Type technology, providing superior efficiency and extremely low energy loss. It is the top choice for residential and commercial solar projects.</p>',
                 'specifications' => [
@@ -72,7 +72,8 @@ class ProductSeeder extends Seeder
                 'price_unit_en' => 'VND / Set',
                 'power' => '6kW',
                 'efficiency' => '97.5%',
-                'warranty' => '5 năm',
+                'warranty_vi' => '5 năm',
+                'warranty_en' => '5 years',
                 'description_vi' => '<h2>Biến tần Hybrid Luxpower 6kW</h2><p>Dòng biến tần Hybrid mạnh mẽ, quản lý năng lượng thông minh, cho phép ưu tiên sử dụng năng lượng mặt trời, sạc pin hoặc đẩy lưới linh hoạt.</p>',
                 'description_en' => '<h2>Luxpower 6kW Hybrid Inverter</h2><p>Powerful Hybrid inverter series, smart energy management, allows priority use of solar energy, battery charging or grid export flexibly.</p>',
                 'specifications' => [
@@ -89,10 +90,14 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $product) {
-            Product::query()->updateOrCreate(
+            $record = Product::withTrashed()->updateOrCreate(
                 ['code' => $product['code']],
                 $product,
             );
+
+            if ($record->trashed()) {
+                $record->restore();
+            }
         }
     }
 }

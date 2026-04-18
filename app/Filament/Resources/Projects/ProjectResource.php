@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\Projects;
 
+use App\Models\Province;
 use App\Models\Project;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use Filament\Tables;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Support\RawJs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
@@ -47,6 +49,11 @@ class ProjectResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'Quản lý Đối tác & Lead';
 
     protected static ?int $navigationSort = 6;
+
+    protected static function moneyMask(): RawJs
+    {
+        return RawJs::make('$money($input, \',\', \'.\', 0)');
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -93,9 +100,26 @@ class ProjectResource extends Resource
                             ->label('Công suất')
                             ->maxLength(255)
                             ->placeholder('Ví dụ: 5 kWp'),
+                        TextInput::make('price')
+                            ->label('Giá tiền')
+                            ->mask(static::moneyMask())
+                            ->stripCharacters('.')
+                            ->numeric()
+                            ->minValue(0)
+                            ->suffix('VND'),
                         \Filament\Forms\Components\DatePicker::make('completion_date')
                             ->label('Thời gian hoàn thành')
                             ->displayFormat('d/m/Y'),
+                        Select::make('province_id')
+                            ->label('Tỉnh/Thành')
+                            ->options(fn () => Province::query()
+                                ->whereNull('parent_id')
+                                ->where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->searchable()
+                            ->preload(),
                         TextInput::make('address')
                             ->label('Địa điểm thi công (Địa chỉ)')
                             ->maxLength(255),
@@ -114,6 +138,14 @@ class ProjectResource extends Resource
                             ->label('Ảnh công trình')
                             ->multiple()
                             ->image()
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'image/gif',
+                                'image/heic',
+                                'image/heif',
+                            ])
                             ->panelLayout('grid')
                             ->reorderable()
                             ->disk('root_public')
@@ -234,9 +266,15 @@ class ProjectResource extends Resource
                             ->columnSpanFull(),
                         TextEntry::make('capacity')
                             ->label('Công suất'),
+                        TextEntry::make('price')
+                            ->label('Giá tiền')
+                            ->formatStateUsing(fn ($state) => blank($state) ? 'Chưa cập nhật' : number_format((float) $state, 0, ',', '.') . ' VND'),
                         TextEntry::make('completion_date')
                             ->label('Thời gian hoàn thành')
                             ->date('d/m/Y'),
+                        TextEntry::make('province.name')
+                            ->label('Tỉnh/Thành')
+                            ->placeholder('Chưa cập nhật'),
                         TextEntry::make('address')
                             ->label('Địa điểm thi công (Địa chỉ)')
                             ->columnSpanFull(),
@@ -309,6 +347,14 @@ class ProjectResource extends Resource
                 TextColumn::make('capacity')
                     ->label('Công suất')
                     ->searchable(),
+                TextColumn::make('price')
+                    ->label('Giá tiền')
+                    ->formatStateUsing(fn ($state) => blank($state) ? '-' : number_format((float) $state, 0, ',', '.') . ' VND')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('province.name')
+                    ->label('Tỉnh/Thành')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 // TextColumn::make('address')
                 //     ->label('Địa điểm')
                 //     ->searchable()

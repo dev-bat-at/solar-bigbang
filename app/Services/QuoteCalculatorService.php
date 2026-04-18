@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\QuoteCalculationException;
+use App\Models\Product;
 use App\Models\SystemType;
 
 class QuoteCalculatorService
@@ -17,7 +18,7 @@ class QuoteCalculatorService
 
         $formulaType = $systemType->quote_formula_type;
 
-        if (! in_array($formulaType, ['bam_tai', 'hybrid'], true)) {
+        if (! in_array($formulaType, ['bam_tai', 'hybrid', 'solar_pump'], true)) {
             throw new QuoteCalculationException('Hệ chưa có loại công thức hỗ trợ.');
         }
 
@@ -46,15 +47,21 @@ class QuoteCalculatorService
         $dayRatio ??= $settings['day_ratio_default'];
         $nightRatio ??= max(0, min(1, 1 - $dayRatio));
 
-        $recommendedKwp = match ($formulaType) {
+        $grossKwp = match ($formulaType) {
             'bam_tai' => $monthlyBill / $settings['electric_price'] / $settings['yield'],
             'hybrid' => $monthlyBill / $settings['electric_price'] / $settings['yield'],
+            'solar_pump' => $monthlyBill / $settings['electric_price'] / $settings['yield'],
             default => throw new QuoteCalculationException('Loại công thức chưa được hỗ trợ.'),
         };
 
-        $recommendedKwp = round($recommendedKwp, 1);
+        $grossKwp = round($grossKwp, 2);
+        $installedKwp = $this->resolveInstalledKwp(
+            formulaType: $formulaType,
+            grossKwp: $grossKwp,
+            dayRatio: $dayRatio,
+        );
 
-        $priceTier = $this->resolvePriceTier($systemType->quote_price_tiers ?? [], $phaseType, $recommendedKwp);
+        $priceTier = $this->resolvePriceTier($systemType->quote_price_tiers ?? [], $phaseType, $installedKwp);
 
         if (! $priceTier) {
             throw new QuoteCalculationException('Chưa có đơn giá theo mốc kWp phù hợp cho hệ và loại điện này.');
@@ -70,41 +77,57 @@ class QuoteCalculatorService
             'bam_tai' => $this->calculateLoadFollowing(
                 monthlyBill: $monthlyBill,
                 dayRatio: $dayRatio,
-                recommendedKwp: $recommendedKwp,
+                grossKwp: $grossKwp,
+                installedKwp: $installedKwp,
                 pricePerKw: $pricePerKw,
                 settings: $settings,
             ),
             'hybrid' => $this->calculateHybrid(
                 monthlyBill: $monthlyBill,
                 dayRatio: $dayRatio,
-                recommendedKwp: $recommendedKwp,
+                recommendedKwp: $installedKwp,
+                pricePerKw: $pricePerKw,
+                settings: $settings,
+            ),
+            'solar_pump' => $this->calculateSolarPump(
+                monthlyBill: $monthlyBill,
+                recommendedKwp: $installedKwp,
                 pricePerKw: $pricePerKw,
                 settings: $settings,
             ),
         };
 
-        $recommendation = $this->resolveRecommendation(
-            $systemType->quote_recommendations ?? [],
+        $relatedProducts = $this->resolveRelatedProducts(
             $phaseType,
-            $recommendedKwp,
-            $calculation['battery_capacity'] ?? null,
+            $installedKwp,
         );
 
         return [
             'system_type' => [
                 'id' => $systemType->id,
-                'name' => $systemType->name,
                 'slug' => $systemType->slug,
+                'name' => $systemType->name_vi ?: $systemType->name,
+                'quote_enabled' => (bool) $systemType->quote_is_active,
                 'formula_type' => $formulaType,
+                'vi' => [
+                    'name' => $systemType->name_vi ?: $systemType->name,
+                    'description' => $systemType->description_vi ?: $systemType->description,
+                ],
+                'en' => [
+                    'name' => $systemType->name_en ?: $systemType->name_vi ?: $systemType->name,
+                    'description' => $systemType->description_en ?: $systemType->description_vi ?: $systemType->description,
+                ],
             ],
-            'input' => [
-                'phase_type' => $phaseType,
-                'monthly_bill' => $monthlyBill,
-                'day_ratio' => round($dayRatio, 4),
-                'night_ratio' => round($nightRatio, 4),
-            ],
+            // 'input' => [
+            //     'phase_type' => $phaseType,
+            //     'monthly_bill' => $monthlyBill,
+            //     'day_ratio' => round($dayRatio, 4),
+            //     'night_ratio' => round($nightRatio, 4),
+            // ],
             'result' => [
-                'recommended_kwp' => $recommendedKwp,
+                'gross_kwp' => $grossKwp,
+                'installed_kwp' => $installedKwp,
+                'recommended_kwp' => $installedKwp,
                 'price_per_kw' => round($pricePerKw),
                 'investment_cost' => round($calculation['investment_cost']),
                 'estimated_monthly_saving' => round($calculation['estimated_monthly_saving']),
@@ -112,11 +135,11 @@ class QuoteCalculatorService
                 'battery_price' => isset($calculation['battery_price']) ? round($calculation['battery_price']) : null,
                 'solar_price' => isset($calculation['solar_price']) ? round($calculation['solar_price']) : null,
             ],
-            'suggestion' => $recommendation,
-            'breakdown' => [
-                'settings' => $settings,
-                'matched_price_tier' => $priceTier,
-            ],
+            'related_products' => $relatedProducts,
+            // 'breakdown' => [
+            //     'settings' => $settings,
+            //     'matched_price_tier' => $priceTier,
+            // ],
         ];
     }
 
@@ -174,17 +197,27 @@ class QuoteCalculatorService
         return max(0, min(1, $value));
     }
 
+    protected function resolveInstalledKwp(string $formulaType, float $grossKwp, float $dayRatio): float
+    {
+        $installedKwp = match ($formulaType) {
+            'bam_tai' => $grossKwp * $dayRatio,
+            'hybrid', 'solar_pump' => $grossKwp,
+            default => $grossKwp,
+        };
+
+        return round($installedKwp, 1);
+    }
+
     protected function resolveSettings(SystemType $systemType, ?float $dayRatio): array
     {
         $settings = $systemType->quote_settings ?? [];
 
         $defaults = match ($systemType->quote_formula_type) {
             'bam_tai' => [
-                'electric_price' => 2500,
+                'electric_price' => 2200,
                 'yield' => 120,
                 'market_factor' => 1,
-                'k_factor' => 1,
-                'day_ratio_default' => $dayRatio ?? 0.6,
+                'day_ratio_default' => $dayRatio ?? 0.7,
                 'saving_factor' => 1,
             ],
             'hybrid' => [
@@ -196,13 +229,25 @@ class QuoteCalculatorService
                 'day_ratio_default' => 0.5,
                 'saving_factor' => 1,
             ],
+            'solar_pump' => [
+                'electric_price' => 2200,
+                'yield' => 140,
+                'market_factor' => 1,
+                'saving_factor' => 1,
+            ],
             default => [],
         };
 
-        return [
+        $resolved = [
             ...$defaults,
             ...array_filter($settings, fn (mixed $value) => $value !== null && $value !== ''),
         ];
+
+        if (isset($resolved['day_ratio_default'])) {
+            $resolved['day_ratio_default'] = $this->normalizeRatio($resolved['day_ratio_default']) ?? 0.7;
+        }
+
+        return $resolved;
     }
 
     protected function resolvePriceTier(array $tiers, string $phaseType, float $recommendedKwp): ?array
@@ -225,73 +270,154 @@ class QuoteCalculatorService
         ]) : null;
     }
 
-    protected function resolveRecommendation(array $recommendations, string $phaseType, float $recommendedKwp, ?float $batteryCapacity): array
+    protected function resolveRelatedProducts(string $phaseType, float $recommendedKwp): array
     {
-        $matched = collect($recommendations)
-            ->filter(function (array $recommendation) use ($phaseType, $recommendedKwp): bool {
-                $itemPhase = strtoupper((string) ($recommendation['phase_type'] ?? 'ALL'));
-                $minKw = (float) ($recommendation['min_kw'] ?? 0);
-                $maxKw = $recommendation['max_kw'] ?? null;
+        $maxDistanceKw = max(2.0, round($recommendedKwp * 0.35, 2));
 
-                return in_array($itemPhase, [$phaseType, 'ALL'], true)
-                    && ($recommendedKwp >= $minKw)
-                    && (($maxKw === null) || ($maxKw === '') || ($recommendedKwp < (float) $maxKw));
+        return Product::query()
+            ->with(['productCategory', 'productSubcategory'])
+            ->where('status', 'published')
+            ->get()
+            ->map(function (Product $product) use ($phaseType, $recommendedKwp): ?array {
+                $powerKw = $this->normalizeProductPowerToKw($product->power);
+
+                if ($powerKw === null) {
+                    return null;
+                }
+
+                if (! $this->productMatchesPhaseType($product, $phaseType)) {
+                    return null;
+                }
+
+                return [
+                    'id' => $product->id,
+                    'code' => $product->code,
+                    'slug' => $product->slug,
+                    'name_vi' => $product->name_vi,
+                    'name_en' => $product->name_en,
+                    'power' => $product->power,
+                    'power_kw' => $powerKw,
+                    'distance_kw' => round(abs($powerKw - $recommendedKwp), 2),
+                    'price' => $product->price,
+                    'is_price_contact' => (bool) $product->is_price_contact,
+                    'status' => $product->status,
+                    'primary_image' => $this->resolvePrimaryProductImage($product),
+                    'category' => [
+                        'id' => $product->productCategory?->id,
+                        'name_vi' => $product->productCategory?->name_vi,
+                        'name_en' => $product->productCategory?->name_en,
+                        'slug' => $product->productCategory?->slug,
+                    ],
+                    'subcategory' => [
+                        'id' => $product->productSubcategory?->id,
+                        'name_vi' => $product->productSubcategory?->name_vi,
+                        'name_en' => $product->productSubcategory?->name_en,
+                        'slug' => $product->productSubcategory?->slug,
+                    ],
+                ];
             })
-            ->sortBy(fn (array $recommendation): float => (float) ($recommendation['min_kw'] ?? 0))
-            ->last();
+            ->filter()
+            ->filter(fn (array $product): bool => $product['distance_kw'] <= $maxDistanceKw)
+            ->sortBy([
+                ['distance_kw', 'asc'],
+                ['power_kw', 'asc'],
+            ])
+            ->values()
+            ->take(6)
+            ->all();
+    }
 
-        if (! $matched) {
-            return [
-                'panel_model' => null,
-                'panel_watt' => null,
-                'panel_count' => null,
-                'inverter_model' => null,
-                'inverter_kw' => null,
-                'battery_model' => null,
-                'battery_kwh' => $batteryCapacity ? round($batteryCapacity, 1) : null,
-                'note' => null,
-            ];
+    protected function normalizeProductPowerToKw(mixed $power): ?float
+    {
+        if (! is_string($power) || trim($power) === '') {
+            return null;
         }
 
-        $panelWatt = filled($matched['panel_watt'] ?? null) ? (float) $matched['panel_watt'] : null;
-        $panelCount = filled($matched['panel_count'] ?? null)
-            ? (int) $matched['panel_count']
-            : (($panelWatt && $panelWatt > 0) ? (int) ceil(($recommendedKwp * 1000) / $panelWatt) : null);
+        $normalized = strtolower(str_replace(',', '.', trim($power)));
 
-        return [
-            'panel_model' => $matched['panel_model'] ?? null,
-            'panel_watt' => $panelWatt,
-            'panel_count' => $panelCount,
-            'inverter_model' => $matched['inverter_model'] ?? null,
-            'inverter_kw' => filled($matched['inverter_kw'] ?? null) ? (float) $matched['inverter_kw'] : null,
-            'battery_model' => $matched['battery_model'] ?? null,
-            'battery_kwh' => filled($matched['battery_kwh'] ?? null)
-                ? (float) $matched['battery_kwh']
-                : ($batteryCapacity ? round($batteryCapacity, 1) : null),
-            'note' => $matched['note'] ?? null,
-        ];
+        if (! preg_match('/(\d+(?:\.\d+)?)/', $normalized, $matches)) {
+            return null;
+        }
+
+        $value = (float) $matches[1];
+
+        if (str_contains($normalized, 'kwp') || str_contains($normalized, 'kw')) {
+            return round($value, 2);
+        }
+
+        if (str_contains($normalized, 'wp') || str_contains($normalized, 'w')) {
+            return round($value / 1000, 2);
+        }
+
+        return $value > 100 ? round($value / 1000, 2) : round($value, 2);
+    }
+
+    protected function productMatchesPhaseType(Product $product, string $phaseType): bool
+    {
+        $categorySlug = strtolower((string) ($product->productCategory?->slug ?? ''));
+        $subcategorySlug = strtolower((string) ($product->productSubcategory?->slug ?? ''));
+        $haystack = strtolower(implode(' ', array_filter([
+            $categorySlug,
+            $subcategorySlug,
+            (string) $product->name_vi,
+            (string) $product->name_en,
+            (string) $product->tagline_vi,
+            (string) $product->tagline_en,
+            (string) $product->power,
+        ])));
+
+        if ($phaseType === '1P') {
+            return ! str_contains($haystack, '3 pha') && ! str_contains($haystack, '3phase') && ! str_contains($haystack, '3-phase');
+        }
+
+        if ($phaseType === '3P') {
+            if (str_contains($haystack, '1 pha') || str_contains($haystack, '1phase') || str_contains($haystack, '1-phase')) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return true;
+    }
+
+    protected function resolvePrimaryProductImage(Product $product): ?string
+    {
+        $images = is_array($product->images) ? $product->images : [];
+
+        if ($images === []) {
+            return null;
+        }
+
+        $firstImage = $images[0];
+
+        if (! is_string($firstImage) || $firstImage === '') {
+            return null;
+        }
+
+        return str_starts_with($firstImage, 'http://') || str_starts_with($firstImage, 'https://')
+            ? $firstImage
+            : asset($firstImage);
     }
 
     protected function calculateLoadFollowing(
         float $monthlyBill,
         float $dayRatio,
-        float $recommendedKwp,
+        float $grossKwp,
+        float $installedKwp,
         float $pricePerKw,
         array $settings,
     ): array {
         $marketFactor = (float) ($settings['market_factor'] ?? 1);
-        $kFactor = (float) ($settings['k_factor'] ?? 1);
         $savingFactor = (float) ($settings['saving_factor'] ?? 1);
 
-        $investmentCost = $recommendedKwp
-            * $dayRatio
-            * $pricePerKw
-            * (1 + (($dayRatio - 0.5) * $kFactor))
-            * $marketFactor;
+        $investmentCost = $installedKwp * $pricePerKw * $marketFactor;
 
         $estimatedMonthlySaving = $monthlyBill * $dayRatio * $savingFactor;
 
         return [
+            'gross_kwp' => $grossKwp,
+            'installed_kwp' => $installedKwp,
             'investment_cost' => $investmentCost,
             'estimated_monthly_saving' => $estimatedMonthlySaving,
         ];
@@ -322,6 +448,24 @@ class QuoteCalculatorService
             'battery_capacity' => $batteryCapacity,
             'battery_price' => $batteryPrice,
             'investment_cost' => $solarPrice + $batteryPrice,
+            'estimated_monthly_saving' => $estimatedMonthlySaving,
+        ];
+    }
+
+    protected function calculateSolarPump(
+        float $monthlyBill,
+        float $recommendedKwp,
+        float $pricePerKw,
+        array $settings,
+    ): array {
+        $marketFactor = (float) ($settings['market_factor'] ?? 1);
+        $savingFactor = (float) ($settings['saving_factor'] ?? 1);
+
+        $investmentCost = $recommendedKwp * $pricePerKw * $marketFactor;
+        $estimatedMonthlySaving = $monthlyBill * $savingFactor;
+
+        return [
+            'investment_cost' => $investmentCost,
             'estimated_monthly_saving' => $estimatedMonthlySaving,
         ];
     }

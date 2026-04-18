@@ -2,12 +2,19 @@
 
 namespace App\Providers;
 
+use App\Models\SystemSetting;
+use App\Models\AdminUser;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Dedoc\Scramble\Support\Generator\SecurityRequirement;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use PhpParser\Parser;
+use PhpParser\ParserFactory;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,7 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if (! $this->app->bound(Parser::class)) {
+            $this->app->singleton(Parser::class, fn (): Parser => (new ParserFactory)->createForHostVersion());
+        }
     }
 
     /**
@@ -24,6 +33,40 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->applyRuntimeSettings();
+
+        Event::listen(Login::class, function (Login $event): void {
+            if (! ($event->user instanceof AdminUser)) {
+                return;
+            }
+
+            activity('auth')
+                ->causedBy($event->user)
+                ->event('login')
+                ->withProperties([
+                    'guard' => $event->guard,
+                    'ip' => request()->ip(),
+                    'user_agent' => Str::limit((string) request()->userAgent(), 255),
+                ])
+                ->log('login');
+        });
+
+        Event::listen(Logout::class, function (Logout $event): void {
+            if (! ($event->user instanceof AdminUser)) {
+                return;
+            }
+
+            activity('auth')
+                ->causedBy($event->user)
+                ->event('logout')
+                ->withProperties([
+                    'guard' => $event->guard,
+                    'ip' => request()->ip(),
+                    'user_agent' => Str::limit((string) request()->userAgent(), 255),
+                ])
+                ->log('logout');
+        });
+
         if (class_exists(Scramble::class)) {
             Scramble::afterOpenApiGenerated(function (OpenApi $openApi): void {
                 $openApi->secure(
@@ -80,6 +123,28 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
             });
+        }
+    }
+
+    protected function applyRuntimeSettings(): void
+    {
+        $timezone = (string) config('app.timezone', 'Asia/Ho_Chi_Minh');
+        $locale = (string) config('app.locale', 'vi');
+
+        try {
+            $timezone = (string) (SystemSetting::get('timezone', $timezone) ?: $timezone);
+            $locale = (string) (SystemSetting::get('locale', $locale) ?: $locale);
+        } catch (\Throwable) {
+            // Fall back to config defaults when the settings table is unavailable.
+        }
+
+        if (in_array($timezone, timezone_identifiers_list(), true)) {
+            config(['app.timezone' => $timezone]);
+            date_default_timezone_set($timezone);
+        }
+
+        if ($locale !== '') {
+            app()->setLocale($locale);
         }
     }
 }

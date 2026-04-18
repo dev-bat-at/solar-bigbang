@@ -29,6 +29,7 @@ class NewsController extends Controller
                 $query->where('status', 'published')
                       ->where('publish_at', '<=', now());
             })
+            ->orderBy('name_vi')
             ->orderBy('name')
             ->get();
 
@@ -47,13 +48,13 @@ class NewsController extends Controller
     public function index(Request $request): JsonResponse
     {
         $posts = Post::query()
-            ->with(['tags'])
+            ->with(['tag'])
             ->where('status', 'published')
             ->where('publish_at', '<=', now())
             ->when($request->filled('tag'), function ($query) use ($request) {
-                $query->whereHas('tags', function ($q) use ($request) {
+                $query->whereHas('tag', function ($q) use ($request) {
                     $q->where('tags.slug', $request->input('tag'))
-                      ->orWhere('tags.id', $request->input('tag'));
+                        ->orWhere('tags.id', $request->input('tag'));
                 });
             })
             ->when($request->filled('query'), function ($query) use ($request) {
@@ -95,7 +96,7 @@ class NewsController extends Controller
     public function show(Request $request, string $idOrSlug): JsonResponse
     {
         $post = Post::query()
-            ->with(['tags', 'author'])
+            ->with(['tag', 'author'])
             ->where('status', 'published')
             ->where('publish_at', '<=', now())
             ->where(function ($q) use ($idOrSlug) {

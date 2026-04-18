@@ -1,5 +1,13 @@
 @once
     <style>
+        :root {
+            --app-page-body-bg: #f5f7fb;
+        }
+
+        html.dark {
+            --app-page-body-bg: #09090b;
+        }
+
         #app-page-load-indicator {
             position: fixed;
             inset: 0 auto auto 0;
@@ -12,7 +20,7 @@
         }
 
         body.fi-body {
-            background-color: #f5f7fb;
+            background-color: var(--app-page-body-bg);
         }
 
         #app-page-load-indicator.is-visible {

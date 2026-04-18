@@ -2,21 +2,21 @@
 
 namespace App\Filament\Resources\Posts;
 
+use App\Filament\Resources\Posts\Pages\CreatePost;
+use App\Filament\Resources\Posts\Pages\EditPost;
+use App\Filament\Resources\Posts\Pages\ListPosts;
 use App\Models\Post;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Grid;
-use Filament\Forms\Set;
-use Filament\Forms\Get;
-use Filament\Actions\ViewAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Illuminate\Support\Str;
 
 class PostResource extends Resource
@@ -24,14 +24,18 @@ class PostResource extends Resource
     protected static ?string $model = Post::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
+
     protected static string|\UnitEnum|null $navigationGroup = 'Quản lý Nội dung';
+
     protected static ?string $modelLabel = 'Bài viết';
+
     protected static ?string $pluralModelLabel = 'Tin tức & Bài viết';
+
     protected static ?int $navigationSort = 1;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return !in_array(static::class, config('admin_menu.hidden_resources', []));
+        return ! in_array(static::class, config('admin_menu.hidden_resources', []));
     }
 
     public static function form(Schema $schema): Schema
@@ -48,7 +52,7 @@ class PostResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn($state, $set) => $set('slug', Str::slug($state))),
+                            ->afterStateUpdated(fn ($state, $set) => $set('slug', Str::slug($state))),
                         Forms\Components\TextInput::make('slug')
                             ->label('Đường dẫn bài viết (URL)')
                             ->required()
@@ -110,19 +114,29 @@ class PostResource extends Resource
                     ->icon('heroicon-o-tag')
                     ->columnSpanFull()
                     ->schema([
-                        Forms\Components\Select::make('tags')
-                            ->label('Danh sách Tag')
-                            ->multiple()
-                            ->relationship('tags', 'name')
+                        Forms\Components\Select::make('tag_id')
+                            ->label('Tag')
+                            ->relationship('tag', 'name_vi')
                             ->preload()
                             ->searchable()
                             ->createOptionForm([
-                                Forms\Components\TextInput::make('name')
+                                Forms\Components\TextInput::make('name_vi')
+                                    ->label('Tên Tag (Tiếng Việt)')
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('name_en')
+                                    ->label('Tên Tag (Tiếng Anh)')
                                     ->required()
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('slug')
                                     ->required()
                                     ->maxLength(255),
+                                Forms\Components\ColorPicker::make('color')
+                                    ->label('Màu tag')
+                                    ->hex()
+                                    ->helperText('API sẽ trả về 0xFF + mã màu của tag.')
+                                    ->rule('nullable')
+                                    ->rule('regex:/^#?[0-9A-Fa-f]{6}$/'),
                             ]),
                     ]),
 
@@ -160,12 +174,12 @@ class PostResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'draft' => 'Nháp',
                         'published' => 'Đã đăng',
                         'archived' => 'Lưu trữ',
                     })
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'draft' => 'gray',
                         'published' => 'success',
                         'archived' => 'danger',
@@ -174,7 +188,7 @@ class PostResource extends Resource
                     ->label('Ngày đăng')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('tags.name')
+                Tables\Columns\TextColumn::make('tag.name_vi')
                     ->label('Tag')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
@@ -207,9 +221,9 @@ class PostResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \App\Filament\Resources\Posts\Pages\ListPosts::route('/'),
-            'create' => \App\Filament\Resources\Posts\Pages\CreatePost::route('/create'),
-            'edit' => \App\Filament\Resources\Posts\Pages\EditPost::route('/{record}/edit'),
+            'index' => ListPosts::route('/'),
+            'create' => CreatePost::route('/create'),
+            'edit' => EditPost::route('/{record}/edit'),
         ];
     }
 }

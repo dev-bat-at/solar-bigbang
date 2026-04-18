@@ -9,6 +9,7 @@ use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -61,6 +62,31 @@ class SupportRequestController extends Controller
             'status' => 'new',
             'source' => 'api',
         ]);
+
+        $supportRequest->loadMissing(['product', 'systemType']);
+
+        $activity = activity('api')
+            ->performedOn($supportRequest)
+            ->event('support_request_submitted')
+            ->withProperties([
+                'channel' => 'api',
+                'source' => $supportRequest->source,
+                'ip' => $request->ip(),
+                'user_agent' => Str::limit((string) $request->userAgent(), 255),
+                'actor_name' => $supportRequest->customer_name,
+                'actor_phone' => $supportRequest->customer_phone,
+                'actor_email' => $supportRequest->customer_email,
+                'request_type' => $supportRequest->request_type,
+                'request_type_label' => $supportRequest->request_type_label,
+                'target_label' => $supportRequest->target_label,
+                'support_request_id' => $supportRequest->id,
+            ]);
+
+        if ($request->user() !== null) {
+            $activity->causedBy($request->user());
+        }
+
+        $activity->log('support_request_submitted');
 
         return ApiResponse::success(
             ['support_request_id' => $supportRequest->id],

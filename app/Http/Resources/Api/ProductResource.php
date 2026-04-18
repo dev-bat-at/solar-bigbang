@@ -31,42 +31,49 @@ class ProductResource extends JsonResource
         $faqs_en = collect($this->faqs ?? [])->map(fn($item) => ['question' => $item['question_en'] ?? '', 'answer' => $item['answer_en'] ?? ''])->toArray();
 
         return [
-            'id' => $this->id,
-            'code' => $this->code,
-            'slug' => $this->slug,
-            'status' => $this->status,
-            'is_best_seller' => $this->is_best_seller,
-            'price' => $this->price,
-            'is_price_contact' => (bool)$this->is_price_contact,
-            'power' => $this->power,
-            'efficiency' => $this->efficiency,
-            'warranty' => $this->warranty_vi, // Mặc định hiển thị tiếng Việt lớp ngoài
-            'images' => $images,
             'vi' => [
+                'id' => $this->id,
+                'name' => $this->name_vi,
+                'description' => $this->description_vi,
+				'tagline' => $this->tagline_vi,
+                'code' => $this->code,
+                'slug' => $this->slug,
+                'status' => $this->status,
+                'is_best_seller' => $this->is_best_seller,
+                'price' => $this->price,
+                'is_price_contact' => (bool)$this->is_price_contact,
+                'power' => $this->power,
+                'efficiency' => $this->efficiency,
+                'warranty' => $this->warranty_vi, // Mặc định hiển thị tiếng Việt lớp ngoài
+                'images' => $images,
                 'price_unit' => $this->price_unit_vi,
                 'specifications' => $specifications_vi,
                 'documents' => $documents_vi,
                 'faqs' => $faqs_vi,
                 'category' => $category,
                 'subcategory' => $subcategory,
-                'description' => [
-                    'name' => $this->name_vi,
-                    'tagline' => $this->tagline_vi,
-                    'description' => $this->description_vi,
-                ]
             ],
             'en' => [
+                'id' => $this->id,
+                'name' => $this->name_en,
+				'description' => $this->description_en,
+				'tagline' => $this->tagline_en,
+                'code' => $this->code,
+                'slug' => $this->slug,
+                'status' => $this->status,
+                'is_best_seller' => $this->is_best_seller,
+                'price' => $this->price,
+                'is_price_contact' => (bool)$this->is_price_contact,
+                'power' => $this->power,
+                'efficiency' => $this->efficiency,
+                'warranty' => $this->warranty_vi, // Mặc định hiển thị tiếng Việt lớp ngoài
+                'images' => $images,
                 'price_unit' => $this->price_unit_en,
                 'specifications' => $specifications_en,
                 'documents' => $documents_en,
                 'faqs' => $faqs_en,
                 'category' => $category,
                 'subcategory' => $subcategory,
-                'description' => [
-                    'name' => $this->name_en,
-                    'tagline' => $this->tagline_en,
-                    'description' => $this->description_en,
-                ]
             ],
         ];
     }

@@ -15,11 +15,23 @@ class ProductCategoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'sort_order' => $this->sort_order,
-            'children' => ProductCategoryResource::collection($this->whenLoaded('children')),
+            // 'name' => $this->name_vi ?: $this->name,
+            'vi' => [
+                'id' => $this->id,
+                'slug' => $this->slug,
+                'sort_order' => $this->sort_order,
+                'name' => $this->name_vi ?: $this->name,
+                'children' => ProductCategoryResource::collection($this->whenLoaded('children')),
+
+            ],
+            'en' => [
+                'id' => $this->id,
+                'slug' => $this->slug,
+                'sort_order' => $this->sort_order,
+                'name' => $this->name_en ?: $this->name_vi ?: $this->name,
+                'children' => ProductCategoryResource::collection($this->whenLoaded('children')),
+
+            ],
         ];
     }
 }

@@ -28,14 +28,18 @@ class SystemType extends Model
     protected static function boot()
     {
         parent::boot();
+        static::saving(function ($model) {
+            $model->name = $model->name_vi ?: $model->name;
+            $model->description = $model->description_vi ?: $model->description;
+        });
         static::creating(function ($model) {
             if (empty($model->slug)) {
-                $model->slug = Str::slug($model->name);
+                $model->slug = Str::slug($model->name_vi ?: $model->name);
             }
         });
         static::updating(function ($model) {
             if (empty($model->slug)) {
-                $model->slug = Str::slug($model->name);
+                $model->slug = Str::slug($model->name_vi ?: $model->name);
             }
         });
     }

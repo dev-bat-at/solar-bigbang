@@ -28,10 +28,11 @@ class ProductController extends Controller
             ->where('is_active', true)
             ->with([
                 'children' => function ($query) {
-                    $query->where('is_active', true)->orderBy('sort_order')->orderBy('name');
+                    $query->where('is_active', true)->orderBy('sort_order')->orderBy('name_vi')->orderBy('name');
                 }
             ])
             ->orderBy('sort_order')
+            ->orderBy('name_vi')
             ->orderBy('name')
             ->get();
 

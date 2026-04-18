@@ -48,16 +48,20 @@ class ProductCategoryResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('parent_id')
                             ->label('Loại cha')
-                            ->relationship('parent', 'name', fn ($query) => $query->whereNull('parent_id'))
+                            ->relationship('parent', 'name_vi', fn ($query) => $query->whereNull('parent_id'))
                             ->searchable()
                             ->preload()
                             ->placeholder('Không có - đây là loại cha'),
-                        Forms\Components\TextInput::make('name')
-                            ->label('Tên loại')
+                        Forms\Components\TextInput::make('name_vi')
+                            ->label('Tên loại (Tiếng Việt)')
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn (string $operation, $state, $set) => $operation === 'create' ? $set('slug', Str::slug($state)) : null),
+                        Forms\Components\TextInput::make('name_en')
+                            ->label('Tên loại (Tiếng Anh)')
+                            ->required()
+                            ->maxLength(255),
                         Forms\Components\TextInput::make('slug')
                             ->label('Slug')
                             ->required()
@@ -80,11 +84,17 @@ class ProductCategoryResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Tên loại')
+                    ->formatStateUsing(fn ($state, $record): string => $record->name_vi ?: $state)
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('name_en')
+                    ->label('Tên EN')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('parent.name')
                     ->label('Thuộc loại')
                     ->placeholder('Loại cha')
+                    ->formatStateUsing(fn ($state, $record): string => $record->parent?->name_vi ?: $state)
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('children_count')
@@ -105,7 +115,7 @@ class ProductCategoryResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('parent_id')
                     ->label('Loại cha')
-                    ->relationship('parent', 'name')
+                    ->relationship('parent', 'name_vi')
                     ->searchable()
                     ->preload()
                     ->placeholder('Tất cả'),

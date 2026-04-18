@@ -18,6 +18,13 @@ class ProductCategory extends Model
         'sort_order' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $category): void {
+            $category->name = $category->name_vi ?: $category->name;
+        });
+    }
+
     public function parent()
     {
         return $this->belongsTo(self::class, 'parent_id');
@@ -25,7 +32,7 @@ class ProductCategory extends Model
 
     public function children()
     {
-        return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('name');
+        return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('name_vi')->orderBy('name');
     }
 
     public function products()

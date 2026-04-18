@@ -67,7 +67,7 @@ class CustomerResource extends Resource
                         Select::make('system_type_id')
                             ->label('Hệ thống quan tâm')
                             ->prefixIcon('heroicon-m-bolt')
-                            ->relationship('systemType', 'name')
+                            ->relationship('systemType', 'name_vi')
                             ->searchable()
                             ->preload()
                             ->placeholder('Chọn hệ thống'),
@@ -105,29 +105,17 @@ class CustomerResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                Section::make('Trạng thái tài khoản')
-                    ->description('Quản lý trạng thái hoạt động của khách hàng trong luồng đại lý.')
+                Section::make('Trạng thái xử lý')
+                    ->description('Theo dõi tiến độ chăm sóc khách hàng của đại lý.')
                     ->icon('heroicon-o-shield-check')
                     ->columnSpanFull()
                     ->schema([
                         Select::make('status')
                             ->label('Trạng thái')
                             ->prefixIcon('heroicon-m-check-circle')
-                            ->options([
-                                'active' => 'Hoạt động',
-                                'inactive' => 'Ngưng hoạt động',
-                                'locked' => 'Bị khóa',
-                            ])
+                            ->options(Customer::statusOptions())
                             ->required()
-                            ->default('active')
-                            ->live(),
-                        TextInput::make('lock_reason')
-                            ->label('Lý do khóa')
-                            ->prefixIcon('heroicon-m-lock-closed')
-                            ->maxLength(255)
-                            ->visible(fn($get) => $get('status') === 'locked')
-                            ->requiredIf('status', 'locked')
-                            ->helperText('Bắt buộc nhập lý do khi khóa tài khoản.'),
+                            ->default('new'),
                     ])->columns(2),
             ]);
     }
@@ -156,7 +144,7 @@ class CustomerResource extends Resource
                     ->searchable()
                     ->icon('heroicon-m-envelope')
                     ->toggleable(isToggledHiddenByDefault: false),
-                TextColumn::make('systemType.name')
+                TextColumn::make('systemType.name_vi')
                     ->label('Hệ thống quan tâm')
                     ->searchable()
                     ->sortable()
@@ -175,22 +163,13 @@ class CustomerResource extends Resource
                 TextColumn::make('status')
                     ->label('Trạng thái')
                     ->badge()
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'active' => 'Hoạt động',
-                        'inactive' => 'Ngưng hoạt động',
-                        'locked' => 'Bị khóa',
-                        default => $state,
-                    })
+                    ->formatStateUsing(fn(string $state): string => Customer::statusOptions()[$state] ?? $state)
                     ->color(fn(string $state): string => match ($state) {
-                        'active' => 'success',
-                        'inactive' => 'gray',
-                        'locked' => 'danger',
+                        'new' => 'info',
+                        'processing' => 'warning',
+                        'completed' => 'success',
                         default => 'gray',
                     }),
-                TextColumn::make('lock_reason')
-                    ->label('Lý do khóa')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->placeholder('—'),
                 // TextColumn::make('leads_count')
                 //     ->label('Số lead')
                 //     ->counts('leads')
@@ -213,17 +192,13 @@ class CustomerResource extends Resource
                     ->placeholder('Tất cả đại lý'),
                 SelectFilter::make('system_type_id')
                     ->label('Hệ thống quan tâm')
-                    ->relationship('systemType', 'name')
+                    ->relationship('systemType', 'name_vi')
                     ->searchable()
                     ->preload()
                     ->placeholder('Tất cả hệ thống'),
                 SelectFilter::make('status')
                     ->label('Trạng thái')
-                    ->options([
-                        'active' => 'Hoạt động',
-                        'inactive' => 'Ngưng hoạt động',
-                        'locked' => 'Bị khóa',
-                    ]),
+                    ->options(Customer::statusOptions()),
                 TrashedFilter::make(),
             ])
             ->actions([

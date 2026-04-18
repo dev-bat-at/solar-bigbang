@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<FilesMatch ".(ico|pdf|flv)$">
+    Header set Cache-Control "max-age=29030400, public"
+</FilesMatch>
+
+<FilesMatch ".(jpg|jpeg|png|gif|swf)$">
+    Header set Cache-Control "max-age=604800, public"
+</FilesMatch>
+
+<FilesMatch ".(xml|txt|css|js)$">
+    Header set Cache-Control "max-age=604800, proxy-revalidate"
+</FilesMatch>
+
+<FilesMatch ".(html|htm|php)$">
+    Header set Cache-Control "max-age=604800, private, proxy-revalidate"
+</FilesMatch>

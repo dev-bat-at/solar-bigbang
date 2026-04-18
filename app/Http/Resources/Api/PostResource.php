@@ -2,10 +2,9 @@
 
 namespace App\Http\Resources\Api;
 
+use App\Support\Media\PublicAsset;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
-
 class PostResource extends JsonResource
 {
     /**
@@ -20,9 +19,9 @@ class PostResource extends JsonResource
             'title' => $this->title,
             'content' => $this->content,
             'slug' => $this->slug,
-            'featured_image' => $this->featured_image ? asset($this->featured_image) : null,
+            'featured_image' => PublicAsset::url($this->featured_image),
             'publish_at' => $this->publish_at?->format('Y-m-d H:i:s'),
-            'tags' => TagResource::collection($this->whenLoaded('tags')),
+            'tag' => $this->whenLoaded('tag', fn () => new TagResource($this->tag)),
         ];
     }
 }

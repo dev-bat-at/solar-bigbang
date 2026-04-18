@@ -2,37 +2,40 @@
 
 namespace Database\Seeders;
 
+use App\Models\AdminUser;
 use App\Models\Post;
 use App\Models\Tag;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class SamplePostSeeder extends Seeder
 {
     public function run(): void
     {
-        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        Post::truncate();
-        \Illuminate\Support\Facades\DB::table('post_tag')->truncate();
-        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Post::query()->forceDelete();
+        Tag::query()->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        $adminId = \App\Models\AdminUser::first()->id ?? null;
+        $adminId = AdminUser::first()->id ?? null;
 
         $tags = [
-            'Năng lượng mặt trời',
-            'Pin Lithium',
-            'Biến tần Inverter',
-            'Tin tức thị trường',
-            'Hướng dẫn lắp đặt',
-            'Công nghệ mới',
-            'Khuyến mãi',
-            'Dự án tiêu biểu',
+            ['name_vi' => 'Tin công nghệ', 'name_en' => 'Technology News', 'color' => '#F97316'],
+            ['name_vi' => 'Giải pháp hệ thống', 'name_en' => 'System Solutions', 'color' => '#0EA5E9'],
+            ['name_vi' => 'Hướng dẫn sử dụng', 'name_en' => 'User Guides', 'color' => '#22C55E'],
+            ['name_vi' => 'Khuyến mãi', 'name_en' => 'Promotions', 'color' => '#EC4899'],
         ];
 
-        $createdTags = collect($tags)->map(function ($name) {
+        $createdTags = collect($tags)->map(function (array $tag) {
             return Tag::updateOrCreate(
-                ['slug' => Str::slug($name)],
-                ['name' => $name]
+                ['slug' => Str::slug($tag['name_vi'])],
+                [
+                    'name' => $tag['name_vi'],
+                    'name_vi' => $tag['name_vi'],
+                    'name_en' => $tag['name_en'],
+                    'color' => $tag['color'],
+                ]
             );
         });
 
@@ -79,21 +82,17 @@ class SamplePostSeeder extends Seeder
                 'author_id' => $adminId,
                 'title' => $postData['title'],
                 'slug' => Str::slug($postData['title']),
-                'content' => $postData['content'] . str_repeat("\r\n\r\nNội dung miêu tả chi tiết thêm cho bài báo này.", 3),
+                'content' => $postData['content'].str_repeat("\r\n\r\nNội dung miêu tả chi tiết thêm cho bài báo này.", 3),
                 'title_2' => $postData['title_2'],
-                'content_2' => $postData['content_2'] . str_repeat("\r\n\r\nThông tin chi tiết kỹ thuật khác cần lưu ý.", 2),
-                'featured_image' => 'posts/thumbnails/sample-' . ($index + 1) . '.jpg',
+                'content_2' => $postData['content_2'].str_repeat("\r\n\r\nThông tin chi tiết kỹ thuật khác cần lưu ý.", 2),
+                'featured_image' => 'posts/thumbnails/sample-'.($index + 1).'.jpg',
                 'status' => $postData['status'],
                 'publish_at' => now()->subDays($index * 2),
-                'seo_title' => $postData['title'] . ' | Solar BigBang',
-                'seo_description' => 'Tìm hiểu thêm về ' . $postData['title'] . ' tại website chính thức của Solar BigBang. Tin tức cập nhật mới nhất.',
-                'seo_keywords' => 'năng lượng mặt trời, solar bigbang, ' . strtolower($postData['title']),
+                'seo_title' => $postData['title'].' | Solar BigBang',
+                'seo_description' => 'Tìm hiểu thêm về '.$postData['title'].' tại website chính thức của Solar BigBang. Tin tức cập nhật mới nhất.',
+                'seo_keywords' => 'năng lượng mặt trời, solar bigbang, '.strtolower($postData['title']),
+                'tag_id' => $createdTags[$index % $createdTags->count()]->id,
             ]);
-
-            // Gán 1-3 tag ngẫu nhiên
-            $post->tags()->attach(
-                $createdTags->random(rand(1, 3))->pluck('id')->toArray()
-            );
         }
     }
 }

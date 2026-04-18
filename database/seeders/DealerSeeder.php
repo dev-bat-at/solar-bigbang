@@ -18,6 +18,7 @@ class DealerSeeder extends Seeder
                 'address' => '12 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
                 'status' => 'approved',
                 'priority_order' => 1,
+                'password' => 'secret123',
             ],
             [
                 'name' => 'Điện mặt trời Sài Gòn',
@@ -27,6 +28,7 @@ class DealerSeeder extends Seeder
                 'address' => '88 Điện Biên Phủ, Bình Thạnh, TP. Hồ Chí Minh',
                 'status' => 'approved',
                 'priority_order' => 2,
+                'password' => 'secret123',
             ],
             [
                 'name' => 'Năng lượng xanh Hà Nội',
@@ -36,6 +38,7 @@ class DealerSeeder extends Seeder
                 'address' => '26 Cầu Giấy, Hà Nội',
                 'status' => 'approved',
                 'priority_order' => 3,
+                'password' => 'secret123',
             ],
             [
                 'name' => 'Đại lý Solar Đà Nẵng',
@@ -45,6 +48,7 @@ class DealerSeeder extends Seeder
                 'address' => '45 Nguyễn Văn Linh, Đà Nẵng',
                 'status' => 'approved',
                 'priority_order' => 4,
+                'password' => 'secret123',
             ],
             [
                 'name' => 'Hợp tác xã Solar Mekong',
@@ -54,6 +58,7 @@ class DealerSeeder extends Seeder
                 'address' => '102 30/4, Ninh Kiều, Cần Thơ',
                 'status' => 'approved',
                 'priority_order' => 5,
+                'password' => 'secret123',
             ],
         ];
 

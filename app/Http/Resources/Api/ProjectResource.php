@@ -19,7 +19,10 @@ class ProjectResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->title ?? current(explode(' ', $this->description)) . ' Project',
-            'system_type' => $this->whenLoaded('systemType', fn () => $this->systemType->name),
+            'system_type' => $this->whenLoaded('systemType', fn () => [
+                'name_vi' => $this->systemType->name_vi ?: $this->systemType->name,
+                'name_en' => $this->systemType->name_en ?: $this->systemType->name_vi ?: $this->systemType->name,
+            ]),
             'address' => $this->address,
             'images' => $images,
             'is_completed' => $isCompleted,

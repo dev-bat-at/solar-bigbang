@@ -13,6 +13,20 @@ class Customer extends Model
 
     protected $guarded = [];
 
+    public static function statusOptions(): array
+    {
+        return [
+            'new' => 'Mới',
+            'processing' => 'Đang xử lý',
+            'completed' => 'Hoàn thành',
+        ];
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return static::statusOptions()[$this->status] ?? $this->status;
+    }
+
     /**
      * Đại lý sở hữu khách hàng này.
      */

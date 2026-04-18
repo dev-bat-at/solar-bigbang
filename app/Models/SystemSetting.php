@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Media\PublicAsset;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
@@ -34,10 +35,7 @@ class SystemSetting extends Model
         if (!$value)
             return $default;
 
-        if (str_starts_with($value, 'http'))
-            return $value;
-
-        return asset($value);
+        return PublicAsset::url($value) ?? $default;
     }
 
     public static function set($key, $value, $group = null)
