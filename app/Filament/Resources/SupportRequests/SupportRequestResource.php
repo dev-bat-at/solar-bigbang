@@ -97,7 +97,7 @@ class SupportRequestResource extends Resource
                             ->required(fn ($get) => $get('request_type') === 'product_quote'),
                         Select::make('system_type_id')
                             ->label('Hệ cần báo giá')
-                            ->relationship('systemType', 'name')
+                            ->relationship('systemType', 'name_vi')
                             ->searchable()
                             ->preload()
                             ->visible(fn ($get) => $get('request_type') === 'system_quote')
@@ -105,6 +105,62 @@ class SupportRequestResource extends Resource
                         Textarea::make('customer_message')
                             ->label('Nội dung khách gửi')
                             ->rows(4)
+                            ->columnSpanFull(),
+                    ])->columns(2),
+
+                Section::make('Thông tin bổ sung khách đã gửi')
+                    ->description('Hiển thị các field động hoặc tỷ lệ ngày/đêm mà frontend gửi lên theo cấu hình của hệ.')
+                    ->icon('heroicon-o-clipboard-document')
+                    ->columnSpanFull()
+                    ->visible(fn ($record): bool => $record?->request_payload_fields !== [])
+                    ->schema([
+                        TextInput::make('request_payload.mode')
+                            ->label('Chế độ biểu mẫu')
+                            ->afterStateHydrated(function (TextInput $component, $state, ?SupportRequest $record): void {
+                                $component->state($record?->request_payload_mode_label);
+                            })
+                            ->disabled()
+                            ->dehydrated(false),
+                        Textarea::make('request_payload_summary')
+                            ->label('Tóm tắt')
+                            ->afterStateHydrated(function (Textarea $component, $state, ?SupportRequest $record): void {
+                                $component->state($record?->request_payload_summary);
+                            })
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        \Filament\Forms\Components\Repeater::make('request_payload_fields')
+                            ->label('Chi tiết field')
+                            ->afterStateHydrated(function (\Filament\Forms\Components\Repeater $component, $state, ?SupportRequest $record): void {
+                                $component->state($record?->request_payload_fields ?? []);
+                            })
+                            ->schema([
+                                TextInput::make('display_key')
+                                    ->label('Trường dữ liệu')
+                                    ->disabled()
+                                    ->dehydrated(false),
+                                TextInput::make('label_vi')
+                                    ->label('Nhãn hiển thị')
+                                    ->disabled()
+                                    ->dehydrated(false),
+                                TextInput::make('label_en')
+                                    ->label('Nhãn EN')
+                                    ->disabled()
+                                    ->dehydrated(false),
+                                Textarea::make('value')
+                                    ->label('Giá trị')
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->rows(2)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(3)
+                            ->addable(false)
+                            ->deletable(false)
+                            ->reorderable(false)
+                            ->default([])
+                            ->dehydrated(false)
                             ->columnSpanFull(),
                     ])->columns(2),
 
@@ -163,6 +219,10 @@ class SupportRequestResource extends Resource
                 TextColumn::make('target_label')
                     ->label('Đối tượng')
                     ->placeholder('Liên hệ chung')
+                    ->toggleable(),
+                TextColumn::make('request_payload_summary')
+                    ->label('Thông tin gửi thêm')
+                    ->limit(80)
                     ->toggleable(),
                 TextColumn::make('status')
                     ->label('Trạng thái')

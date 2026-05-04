@@ -96,7 +96,145 @@ class SystemTypeResource extends Resource
                                             ->helperText('Bật để hệ này xuất hiện và cho phép tính báo giá.')
                                             ->inline(false)
                                             ->default(false)
+                                            ->live()
                                             ->columnSpan(1),
+                                        Forms\Components\Toggle::make('show_calculation_formula')
+                                            ->label('Show công thức tính')
+                                            ->helperText('Tắt: frontend dùng mặc định 2 trường tỷ lệ ngày/đêm. Bật: frontend dùng Tên + SĐT mặc định và các field bổ sung do admin cấu hình.')
+                                            ->inline(false)
+                                            ->default(false)
+                                            ->live()
+                                            ->afterStateUpdated(function ($state, $get, $set): void {
+                                                if (! $state && blank($get('quote_settings.ratio_fields'))) {
+                                                    $set('quote_settings.ratio_fields', SystemType::defaultQuoteRatioFields());
+                                                }
+                                            })
+                                            ->columnSpan(1),
+                                    ])
+                                    ->columns(2),
+                                Section::make('Cấu hình nhập liệu frontend')
+                                    ->description('Bật hoặc tắt là phần field bên dưới đổi ngay, không cần lưu mới thấy.')
+                                    ->columnSpanFull()
+                                    ->schema([
+                                        Forms\Components\Placeholder::make('ratio_mode_note')
+                                            ->label('Khi không bật Show công thức tính')
+                                            ->content('Admin cấu hình 2 field tỷ lệ ngày/đêm bên dưới, API sẽ trả lại đúng metadata này để frontend render UI.')
+                                            ->visible(fn ($get) => ! $get('show_calculation_formula') && $get('quote_formula_type') === 'bam_tai'),
+                                        Forms\Components\Repeater::make('quote_settings.ratio_fields')
+                                            ->label('2 field tỷ lệ ngày/đêm')
+                                            ->default(SystemType::defaultQuoteRatioFields())
+                                            ->afterStateHydrated(function ($state, $set): void {
+                                                if (blank($state)) {
+                                                    $set('quote_settings.ratio_fields', SystemType::defaultQuoteRatioFields());
+                                                }
+                                            })
+                                            ->minItems(2)
+                                            ->maxItems(2)
+                                            ->reorderable(false)
+                                            ->addable(false)
+                                            ->deletable(false)
+                                            ->visible(fn ($get) => ! $get('show_calculation_formula') && $get('quote_formula_type') === 'bam_tai')
+                                            ->schema([
+                                                Forms\Components\TextInput::make('key')
+                                                    ->label('Key')
+                                                    ->required()
+                                                    ->maxLength(100)
+                                                    ->helperText('Ví dụ: start_day, end_night'),
+                                                Forms\Components\TextInput::make('label_vi')
+                                                    ->label('Nhãn (Tiếng Việt)')
+                                                    ->required()
+                                                    ->maxLength(255),
+                                                Forms\Components\TextInput::make('label_en')
+                                                    ->label('Nhãn (Tiếng Anh)')
+                                                    ->required()
+                                                    ->maxLength(255),
+                                                Forms\Components\TextInput::make('placeholder_vi')
+                                                    ->label('Placeholder (Tiếng Việt)')
+                                                    ->maxLength(255),
+                                                Forms\Components\TextInput::make('placeholder_en')
+                                                    ->label('Placeholder (Tiếng Anh)')
+                                                    ->maxLength(255),
+                                                Forms\Components\TextInput::make('default_value')
+                                                    ->label('Giá trị mặc định (%)')
+                                                    ->numeric()
+                                                    ->step('0.01')
+                                                    ->required(),
+                                            ])
+                                            ->columns(3)
+                                            ->columnSpanFull(),
+                                        Forms\Components\RichEditor::make('quote_settings.formula_content_vi')
+                                            ->label('Nội dung công thức (Tiếng Việt)')
+                                            ->toolbarButtons([
+                                                'bold',
+                                                'italic',
+                                                'bulletList',
+                                                'orderedList',
+                                                'h2',
+                                                'h3',
+                                                'blockquote',
+                                                'undo',
+                                                'redo',
+                                            ])
+                                            ->visible(fn ($get) => (bool) $get('show_calculation_formula'))
+                                            ->columnSpanFull(),
+                                        Forms\Components\RichEditor::make('quote_settings.formula_content_en')
+                                            ->label('Nội dung công thức (Tiếng Anh)')
+                                            ->toolbarButtons([
+                                                'bold',
+                                                'italic',
+                                                'bulletList',
+                                                'orderedList',
+                                                'h2',
+                                                'h3',
+                                                'blockquote',
+                                                'undo',
+                                                'redo',
+                                            ])
+                                            ->visible(fn ($get) => (bool) $get('show_calculation_formula'))
+                                            ->columnSpanFull(),
+                                        Forms\Components\Repeater::make('quote_request_fields')
+                                            ->label('Field bổ sung cho biểu mẫu')
+                                            ->defaultItems(0)
+                                            ->reorderable()
+                                            ->cloneable()
+                                            ->collapsed()
+                                            ->addActionLabel('Thêm field')
+                                            ->visible(fn ($get) => (bool) $get('show_calculation_formula'))
+                                            ->schema([
+                                                Forms\Components\TextInput::make('key')
+                                                    ->label('Key')
+                                                    ->required()
+                                                    ->helperText('Ví dụ: monthly_bill, roof_area, usage_note')
+                                                    ->maxLength(100),
+                                                Forms\Components\Select::make('input_type')
+                                                    ->label('Loại input')
+                                                    ->options([
+                                                        'text' => 'Text',
+                                                        'number' => 'Number',
+                                                        'textarea' => 'Textarea',
+                                                    ])
+                                                    ->default('text')
+                                                    ->required(),
+                                                Forms\Components\Toggle::make('required')
+                                                    ->label('Bắt buộc')
+                                                    ->default(false),
+                                                Forms\Components\TextInput::make('label_vi')
+                                                    ->label('Nhãn (Tiếng Việt)')
+                                                    ->required()
+                                                    ->maxLength(255),
+                                                Forms\Components\TextInput::make('label_en')
+                                                    ->label('Nhãn (Tiếng Anh)')
+                                                    ->required()
+                                                    ->maxLength(255),
+                                                Forms\Components\TextInput::make('placeholder_vi')
+                                                    ->label('Placeholder (Tiếng Việt)')
+                                                    ->maxLength(255),
+                                                Forms\Components\TextInput::make('placeholder_en')
+                                                    ->label('Placeholder (Tiếng Anh)')
+                                                    ->maxLength(255),
+                                            ])
+                                            ->columns(3)
+                                            ->columnSpanFull(),
                                     ])
                                     ->columns(2),
                             ]),
@@ -135,33 +273,69 @@ class SystemTypeResource extends Resource
                                             ->default(1)
                                             ->step('0.01')
                                             ->helperText('Có thể để 1.0 nếu chỉ cần ra công suất và chi phí dự kiến.')
-                                            ->visible(fn ($get) => $get('quote_formula_type') !== 'bam_tai'),
+                                            ->visible(fn ($get) => in_array($get('quote_formula_type'), ['hybrid', 'solar_pump'], true)),
                                         Forms\Components\TextInput::make('quote_settings.day_ratio_default')
                                             ->label('Tỷ lệ dùng điện ban ngày mặc định (%)')
                                             ->numeric()
                                             ->default(70)
                                             ->step('0.01')
                                             ->helperText('Nhập 30 đến 80. Nếu frontend không truyền, hệ thống sẽ dùng giá trị này.')
-                                            ->visible(fn ($get) => in_array($get('quote_formula_type'), ['bam_tai', 'hybrid'], true)),
-                                        Forms\Components\TextInput::make('quote_settings.battery_price_per_kwh')
-                                            ->label('Giá pin lưu trữ / kWh')
-                                            ->mask(static::moneyMask())
-                                            ->stripCharacters('.')
+                                            ->visible(fn ($get) => $get('quote_formula_type') === 'bam_tai' && ! $get('show_calculation_formula')),
+                                        Forms\Components\TextInput::make('quote_settings.three_phase_price_factor')
+                                            ->label('Hệ số giá điện 3 pha')
                                             ->numeric()
-                                            ->default(2500000)
+                                            ->default(1.1)
+                                            ->step('0.01')
+                                            ->helperText('Theo tài liệu hiện tại: điện 3 pha cao hơn 10% so với 1 pha.')
                                             ->visible(fn ($get) => $get('quote_formula_type') === 'hybrid'),
-                                        Forms\Components\TextInput::make('quote_settings.backup_hours')
-                                            ->label('Số giờ backup')
+                                        Forms\Components\TextInput::make('quote_settings.three_phase_kw_factor')
+                                            ->label('Hệ số quy đổi kWp cho 3 pha')
                                             ->numeric()
-                                            ->default(1)
-                                            ->step('0.1')
+                                            ->default(0.91)
+                                            ->step('0.01')
+                                            ->helperText('Theo tài liệu hiện tại: điện 3 pha nhân thêm 0.91 khi quy đổi kWp.')
                                             ->visible(fn ($get) => $get('quote_formula_type') === 'hybrid'),
+                                        Forms\Components\Repeater::make('quote_settings.bill_multiplier_tiers')
+                                            ->label('Mốc tiền điện x hệ số')
+                                            ->default(SystemType::defaultHybridBillMultiplierTiers())
+                                            ->afterStateHydrated(function ($state, $set): void {
+                                                if (blank($state)) {
+                                                    $set('quote_settings.bill_multiplier_tiers', SystemType::defaultHybridBillMultiplierTiers());
+                                                }
+                                            })
+                                            ->visible(fn ($get) => $get('quote_formula_type') === 'hybrid' && ! $get('show_calculation_formula'))
+                                            ->collapsed()
+                                            ->cloneable()
+                                            ->reorderable()
+                                            ->addActionLabel('Thêm mốc tiền điện')
+                                            ->schema([
+                                                Forms\Components\TextInput::make('min_bill')
+                                                    ->label('Từ tiền điện')
+                                                    ->mask(static::moneyMask())
+                                                    ->stripCharacters('.')
+                                                    ->numeric()
+                                                    ->required(),
+                                                Forms\Components\TextInput::make('max_bill')
+                                                    ->label('Đến tiền điện')
+                                                    ->mask(static::moneyMask())
+                                                    ->stripCharacters('.')
+                                                    ->numeric()
+                                                    ->helperText('Để trống nếu là mức cuối.'),
+                                                Forms\Components\TextInput::make('multiplier')
+                                                    ->label('Hệ số nhân')
+                                                    ->numeric()
+                                                    ->step('0.01')
+                                                    ->required(),
+                                            ])
+                                            ->columns(3)
+                                            ->columnSpanFull(),
                                     ])
                                     ->columns(2),
                             ]),
 
                         \Filament\Schemas\Components\Tabs\Tab::make('Đơn giá theo mốc')
                             ->icon('heroicon-o-banknotes')
+                            ->visible(fn ($get) => ! (bool) $get('show_calculation_formula') && $get('quote_formula_type') !== 'hybrid')
                             ->schema([
                                 Section::make('Mốc giá / kWp')
                                     ->description('Nhập đơn giá theo loại điện và khoảng công suất. Ví dụ 1 pha dưới 10kW là 7.000.000 đồng/kW.')
@@ -204,6 +378,7 @@ class SystemTypeResource extends Resource
                                             ->columnSpanFull(),
                                     ]),
                             ]),
+
                     ])
                     ->columnSpanFull(),
             ]);
@@ -238,6 +413,9 @@ class SystemTypeResource extends Resource
                     }),
                 Tables\Columns\IconColumn::make('quote_is_active')
                     ->label('Báo giá')
+                    ->boolean(),
+                Tables\Columns\IconColumn::make('show_calculation_formula')
+                    ->label('Show CT')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('slug')
                     ->label('Slug')

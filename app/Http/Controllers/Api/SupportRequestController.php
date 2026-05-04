@@ -9,8 +9,8 @@ use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 #[Group('Liên hệ & Hỗ trợ', 'Các API gửi yêu cầu liên hệ, báo giá từ hệ thống web/app gửi về cho Admin.', 80)]

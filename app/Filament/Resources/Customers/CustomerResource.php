@@ -75,6 +75,11 @@ class CustomerResource extends Resource
                             ->label('Thời gian ưu tiên liên hệ')
                             ->prefixIcon('heroicon-m-clock')
                             ->maxLength(255),
+                        Textarea::make('notes')
+                            ->label('Ghi chú khách gửi')
+                            ->rows(3)
+                            ->maxLength(2000)
+                            ->columnSpanFull(),
                     ])->columns(2),
 
                 Section::make('Thông tin khách hàng đại lý')
@@ -156,6 +161,12 @@ class CustomerResource extends Resource
                     ->searchable()
                     ->limit(20)
                     ->placeholder('—'),
+                TextColumn::make('notes')
+                    ->label('Ghi chú')
+                    ->searchable()
+                    ->limit(40)
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('address')
                     ->label('Địa chỉ')
                     ->limit(30)

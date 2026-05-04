@@ -73,6 +73,9 @@ Route::middleware('api.key')->group(function (): void {
         Route::prefix('systems')->name('api.systems.')->group(function (): void {
             Route::get('/', [\App\Http\Controllers\Api\SystemTypeController::class, 'index'])
                 ->name('index');
+
+            Route::post('/quote-requests', [\App\Http\Controllers\Api\SystemQuoteRequestController::class, 'store'])
+                ->name('quote-requests.store');
         });
 
         Route::prefix('support-requests')->name('api.support.')->group(function (): void {

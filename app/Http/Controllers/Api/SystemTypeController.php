@@ -36,16 +36,7 @@ class SystemTypeController extends Controller
             ->get();
 
         return ApiResponse::success(
-            [
-                'vi' => $systems
-                    ->map(fn (SystemType $system): array => SystemTypeResource::toVietnameseArray($system))
-                    ->values()
-                    ->all(),
-                'en' => $systems
-                    ->map(fn (SystemType $system): array => SystemTypeResource::toEnglishArray($system))
-                    ->values()
-                    ->all(),
-            ],
+            SystemTypeResource::collection($systems),
             'Lấy danh mục hệ thống thành công.',
             'System types retrieved successfully.'
         );

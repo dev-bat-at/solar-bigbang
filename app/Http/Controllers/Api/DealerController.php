@@ -312,6 +312,7 @@ class DealerController extends Controller
             'address' => $validated['address'],
             'system_type_id' => $validated['system_type_id'],
             'contact_time' => $validated['contact_time'] ?? null,
+            'notes' => $validated['notes'] ?? null,
             'dealer_id' => $dealer->id,
             'status' => 'new',
         ]);

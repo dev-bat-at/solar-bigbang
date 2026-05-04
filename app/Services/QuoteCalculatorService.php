@@ -44,58 +44,68 @@ class QuoteCalculatorService
         }
 
         $settings = $this->resolveSettings($systemType, $dayRatio);
-        $dayRatio ??= $settings['day_ratio_default'];
-        $nightRatio ??= max(0, min(1, 1 - $dayRatio));
 
-        $grossKwp = match ($formulaType) {
-            'bam_tai' => $monthlyBill / $settings['electric_price'] / $settings['yield'],
-            'hybrid' => $monthlyBill / $settings['electric_price'] / $settings['yield'],
-            'solar_pump' => $monthlyBill / $settings['electric_price'] / $settings['yield'],
-            default => throw new QuoteCalculationException('Loại công thức chưa được hỗ trợ.'),
-        };
-
-        $grossKwp = round($grossKwp, 2);
-        $installedKwp = $this->resolveInstalledKwp(
-            formulaType: $formulaType,
-            grossKwp: $grossKwp,
-            dayRatio: $dayRatio,
-        );
-
-        $priceTier = $this->resolvePriceTier($systemType->quote_price_tiers ?? [], $phaseType, $installedKwp);
-
-        if (! $priceTier) {
-            throw new QuoteCalculationException('Chưa có đơn giá theo mốc kWp phù hợp cho hệ và loại điện này.');
+        if ($formulaType === 'bam_tai') {
+            $dayRatio ??= $settings['day_ratio_default'] ?? 0.7;
+            $nightRatio ??= max(0, min(1, 1 - $dayRatio));
         }
 
-        $pricePerKw = (float) ($priceTier['price_per_kw'] ?? 0);
+        $priceTier = null;
+        $pricePerKw = null;
 
-        if ($pricePerKw <= 0) {
-            throw new QuoteCalculationException('Đơn giá theo mốc kWp chưa hợp lệ.');
-        }
-
-        $calculation = match ($formulaType) {
-            'bam_tai' => $this->calculateLoadFollowing(
+        if ($formulaType === 'hybrid') {
+            $calculation = $this->calculateHybrid(
                 monthlyBill: $monthlyBill,
-                dayRatio: $dayRatio,
+                phaseType: $phaseType,
+                settings: $settings,
+            );
+
+            $grossKwp = (float) $calculation['gross_kwp'];
+            $installedKwp = (float) $calculation['recommended_kwp'];
+        } else {
+            $grossKwp = match ($formulaType) {
+                'bam_tai' => $monthlyBill / $settings['electric_price'] / $settings['yield'],
+                'solar_pump' => $monthlyBill / $settings['electric_price'] / $settings['yield'],
+                default => throw new QuoteCalculationException('Loại công thức chưa được hỗ trợ.'),
+            };
+
+            $grossKwp = round($grossKwp, 2);
+            $installedKwp = $this->resolveInstalledKwp(
+                formulaType: $formulaType,
                 grossKwp: $grossKwp,
-                installedKwp: $installedKwp,
-                pricePerKw: $pricePerKw,
-                settings: $settings,
-            ),
-            'hybrid' => $this->calculateHybrid(
-                monthlyBill: $monthlyBill,
                 dayRatio: $dayRatio,
-                recommendedKwp: $installedKwp,
-                pricePerKw: $pricePerKw,
-                settings: $settings,
-            ),
-            'solar_pump' => $this->calculateSolarPump(
-                monthlyBill: $monthlyBill,
-                recommendedKwp: $installedKwp,
-                pricePerKw: $pricePerKw,
-                settings: $settings,
-            ),
-        };
+            );
+
+            $priceTier = $this->resolvePriceTier($systemType->quote_price_tiers ?? [], $phaseType, $installedKwp);
+
+            if (! $priceTier) {
+                throw new QuoteCalculationException('Chưa có đơn giá theo mốc kWp phù hợp cho hệ và loại điện này.');
+            }
+
+            $pricePerKw = (float) ($priceTier['price_per_kw'] ?? 0);
+
+            if ($pricePerKw <= 0) {
+                throw new QuoteCalculationException('Đơn giá theo mốc kWp chưa hợp lệ.');
+            }
+
+            $calculation = match ($formulaType) {
+                'bam_tai' => $this->calculateLoadFollowing(
+                    monthlyBill: $monthlyBill,
+                    dayRatio: $dayRatio,
+                    grossKwp: $grossKwp,
+                    installedKwp: $installedKwp,
+                    pricePerKw: $pricePerKw,
+                    settings: $settings,
+                ),
+                'solar_pump' => $this->calculateSolarPump(
+                    monthlyBill: $monthlyBill,
+                    recommendedKwp: $installedKwp,
+                    pricePerKw: $pricePerKw,
+                    settings: $settings,
+                ),
+                default => throw new QuoteCalculationException('Loại công thức chưa được hỗ trợ.'),
+            };
+        }
 
         $relatedProducts = $this->resolveRelatedProducts(
             $phaseType,
@@ -128,12 +138,15 @@ class QuoteCalculatorService
                 'gross_kwp' => $grossKwp,
                 'installed_kwp' => $installedKwp,
                 'recommended_kwp' => $installedKwp,
-                'price_per_kw' => round($pricePerKw),
+                'price_per_kw' => $pricePerKw !== null ? round($pricePerKw) : null,
                 'investment_cost' => round($calculation['investment_cost']),
                 'estimated_monthly_saving' => round($calculation['estimated_monthly_saving']),
                 'battery_capacity' => isset($calculation['battery_capacity']) ? round($calculation['battery_capacity'], 1) : null,
                 'battery_price' => isset($calculation['battery_price']) ? round($calculation['battery_price']) : null,
                 'solar_price' => isset($calculation['solar_price']) ? round($calculation['solar_price']) : null,
+                'bill_multiplier' => isset($calculation['bill_multiplier']) ? (float) $calculation['bill_multiplier'] : null,
+                'phase_price_factor' => isset($calculation['phase_price_factor']) ? (float) $calculation['phase_price_factor'] : null,
+                'phase_kw_factor' => isset($calculation['phase_kw_factor']) ? (float) $calculation['phase_kw_factor'] : null,
             ],
             'related_products' => $relatedProducts,
             // 'breakdown' => [
@@ -221,12 +234,12 @@ class QuoteCalculatorService
                 'saving_factor' => 1,
             ],
             'hybrid' => [
-                'electric_price' => 2800,
-                'yield' => 135,
+                'electric_price' => 2500,
+                'yield' => 120,
                 'market_factor' => 1,
-                'battery_price_per_kwh' => 2500000,
-                'backup_hours' => 1,
-                'day_ratio_default' => 0.5,
+                'three_phase_price_factor' => 1.1,
+                'three_phase_kw_factor' => 0.91,
+                'bill_multiplier_tiers' => SystemType::defaultHybridBillMultiplierTiers(),
                 'saving_factor' => 1,
             ],
             'solar_pump' => [
@@ -425,31 +438,58 @@ class QuoteCalculatorService
 
     protected function calculateHybrid(
         float $monthlyBill,
-        float $dayRatio,
-        float $recommendedKwp,
-        float $pricePerKw,
+        string $phaseType,
         array $settings,
     ): array {
         $marketFactor = (float) ($settings['market_factor'] ?? 1);
-        $batteryPricePerKwh = (float) ($settings['battery_price_per_kwh'] ?? 0);
-        $backupHours = (float) ($settings['backup_hours'] ?? 1);
-        $dayRatioDefault = (float) ($settings['day_ratio_default'] ?? 0.5);
-        $effectiveDayRatio = max($dayRatioDefault, $dayRatio);
         $savingFactor = (float) ($settings['saving_factor'] ?? 1);
+        $billMultiplierTier = $this->resolveBillMultiplierTier($settings['bill_multiplier_tiers'] ?? [], $monthlyBill);
 
-        $solarPrice = $recommendedKwp * $effectiveDayRatio * $pricePerKw * $marketFactor;
-        $dailyConsumptionKwh = ($monthlyBill / (float) $settings['electric_price']) / 30;
-        $batteryCapacity = $dailyConsumptionKwh * $backupHours;
-        $batteryPrice = $batteryCapacity * $batteryPricePerKwh;
-        $estimatedMonthlySaving = $monthlyBill * min(1, ($effectiveDayRatio + 0.15)) * $savingFactor;
+        if ($billMultiplierTier === null) {
+            throw new QuoteCalculationException('Chưa có mốc tiền điện phù hợp cho hệ lưu trữ.');
+        }
+
+        $billMultiplier = (float) ($billMultiplierTier['multiplier'] ?? 0);
+
+        if ($billMultiplier <= 0) {
+            throw new QuoteCalculationException('Hệ số mốc tiền điện của hệ lưu trữ chưa hợp lệ.');
+        }
+
+        $phasePriceFactor = $phaseType === '3P'
+            ? (float) ($settings['three_phase_price_factor'] ?? 1.1)
+            : 1.0;
+        $phaseKwFactor = $phaseType === '3P'
+            ? (float) ($settings['three_phase_kw_factor'] ?? 0.91)
+            : 1.0;
+
+        $investmentCost = $monthlyBill * $billMultiplier * $phasePriceFactor * $marketFactor;
+        $recommendedKwp = $investmentCost / $billMultiplier / (float) $settings['electric_price'] / (float) $settings['yield'] * $phaseKwFactor;
+        $recommendedKwp = round($recommendedKwp, 2);
+        $estimatedMonthlySaving = $monthlyBill * $savingFactor;
 
         return [
-            'solar_price' => $solarPrice,
-            'battery_capacity' => $batteryCapacity,
-            'battery_price' => $batteryPrice,
-            'investment_cost' => $solarPrice + $batteryPrice,
+            'gross_kwp' => $recommendedKwp,
+            'recommended_kwp' => round($recommendedKwp, 1),
+            'bill_multiplier' => $billMultiplier,
+            'phase_price_factor' => $phasePriceFactor,
+            'phase_kw_factor' => $phaseKwFactor,
+            'investment_cost' => $investmentCost,
             'estimated_monthly_saving' => $estimatedMonthlySaving,
         ];
+    }
+
+    protected function resolveBillMultiplierTier(array $tiers, float $monthlyBill): ?array
+    {
+        return collect($tiers)
+            ->filter(function (array $tier) use ($monthlyBill): bool {
+                $minBill = (float) ($tier['min_bill'] ?? 0);
+                $maxBill = $tier['max_bill'] ?? null;
+
+                return $monthlyBill >= $minBill
+                    && (($maxBill === null) || ($maxBill === '') || ($monthlyBill <= (float) $maxBill));
+            })
+            ->sortBy(fn (array $tier): float => (float) ($tier['min_bill'] ?? 0))
+            ->first();
     }
 
     protected function calculateSolarPump(
