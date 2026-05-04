@@ -12,6 +12,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -77,8 +78,67 @@ class CustomerResource extends Resource
                             ->maxLength(255),
                         Textarea::make('notes')
                             ->label('Ghi chú khách gửi')
-                            ->rows(3)
+                            ->rows(6)
                             ->maxLength(2000)
+                            ->visible(fn (?Customer $record): bool => ! static::hasGeneratedQuoteNotes($record))
+                            ->columnSpanFull(),
+                    ])->columns(2),
+
+                Section::make('Thông tin bổ sung khách đã gửi')
+                    ->description('Hiển thị các field báo giá được gửi từ API theo cấu hình của hệ.')
+                    ->icon('heroicon-o-clipboard-document')
+                    ->columnSpanFull()
+                    ->visible(fn (?Customer $record): bool => static::hasGeneratedQuoteNotes($record))
+                    ->schema([
+                        TextInput::make('generated_quote_mode')
+                            ->label('Chế độ biểu mẫu')
+                            ->afterStateHydrated(function (TextInput $component, $state, ?Customer $record): void {
+                                $component->state(static::extractGeneratedQuoteMode($record));
+                            })
+                            ->disabled()
+                            ->dehydrated(false),
+                        Textarea::make('generated_quote_message')
+                            ->label('Nội dung khách gửi')
+                            ->afterStateHydrated(function (Textarea $component, $state, ?Customer $record): void {
+                                $component->state(static::extractGeneratedQuoteMessage($record));
+                            })
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->rows(3)
+                            ->visible(fn (?Customer $record): bool => filled(static::extractGeneratedQuoteMessage($record)))
+                            ->columnSpanFull(),
+                        Textarea::make('generated_quote_summary')
+                            ->label('Tóm tắt')
+                            ->afterStateHydrated(function (Textarea $component, $state, ?Customer $record): void {
+                                $component->state(static::extractGeneratedQuoteSummary($record));
+                            })
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        Repeater::make('generated_quote_fields')
+                            ->label('Chi tiết field')
+                            ->afterStateHydrated(function (Repeater $component, $state, ?Customer $record): void {
+                                $component->state(static::extractGeneratedQuoteFields($record));
+                            })
+                            ->schema([
+                                TextInput::make('display_key')
+                                    ->label('Trường dữ liệu')
+                                    ->disabled()
+                                    ->dehydrated(false),
+                                Textarea::make('value')
+                                    ->label('Giá trị')
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->rows(2)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(1)
+                            ->addable(false)
+                            ->deletable(false)
+                            ->reorderable(false)
+                            ->default([])
+                            ->dehydrated(false)
                             ->columnSpanFull(),
                     ])->columns(2),
 
@@ -240,5 +300,116 @@ class CustomerResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    protected static function hasGeneratedQuoteNotes(?Customer $record): bool
+    {
+        if (! $record instanceof Customer) {
+            return false;
+        }
+
+        $notes = trim((string) $record->notes);
+
+        return $notes !== '' && str_contains($notes, 'Biểu mẫu:');
+    }
+
+    protected static function extractGeneratedQuoteMode(?Customer $record): ?string
+    {
+        return static::extractGeneratedQuoteMetaValue($record, 'Biểu mẫu:');
+    }
+
+    protected static function extractGeneratedQuoteMessage(?Customer $record): ?string
+    {
+        return static::extractGeneratedQuoteMetaValue($record, 'Nội dung khách gửi:');
+    }
+
+    protected static function extractGeneratedQuoteSummary(?Customer $record): ?string
+    {
+        $fields = static::extractGeneratedQuoteFields($record);
+
+        if ($fields === []) {
+            return null;
+        }
+
+        return collect($fields)
+            ->map(fn (array $field): string => $field['display_key'].': '.$field['value'])
+            ->implode(' | ');
+    }
+
+    protected static function extractGeneratedQuoteFields(?Customer $record): array
+    {
+        if (! static::hasGeneratedQuoteNotes($record)) {
+            return [];
+        }
+
+        return collect(static::generatedQuoteLines($record))
+            ->reject(fn (string $line): bool => str_starts_with($line, 'Biểu mẫu:'))
+            ->reject(fn (string $line): bool => str_starts_with($line, 'Nội dung khách gửi:'))
+            ->map(function (string $line): ?array {
+                [$label, $value] = array_pad(explode(':', $line, 2), 2, null);
+
+                $label = trim((string) $label);
+                $value = trim((string) $value);
+
+                if ($label === '' || $value === '') {
+                    return null;
+                }
+
+                return [
+                    'display_key' => $label,
+                    'value' => static::formatGeneratedQuoteFieldValue($label, $value),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    protected static function extractGeneratedQuoteMetaValue(?Customer $record, string $prefix): ?string
+    {
+        foreach (static::generatedQuoteLines($record) as $line) {
+            if (! str_starts_with($line, $prefix)) {
+                continue;
+            }
+
+            $value = trim(substr($line, strlen($prefix)));
+
+            return $value !== '' ? $value : null;
+        }
+
+        return null;
+    }
+
+    protected static function generatedQuoteLines(?Customer $record): array
+    {
+        if (! $record instanceof Customer) {
+            return [];
+        }
+
+        return collect(preg_split('/\r\n|\r|\n/', (string) $record->notes) ?: [])
+            ->map(fn (string $line): string => trim($line))
+            ->filter(fn (string $line): bool => $line !== '')
+            ->values()
+            ->all();
+    }
+
+    protected static function formatGeneratedQuoteFieldValue(string $label, string $value): string
+    {
+        $normalizedLabel = mb_strtolower(trim($label));
+        $normalizedValue = str_replace(['.', ',', ' ', 'vnđ', 'vnd'], '', mb_strtolower(trim($value)));
+
+        if (
+            $normalizedValue !== ''
+            && is_numeric($normalizedValue)
+            && (
+                str_contains($normalizedLabel, 'tiền')
+                || str_contains($normalizedLabel, 'chi phí')
+                || str_contains($normalizedLabel, 'ngân sách')
+            )
+        ) {
+            return number_format((float) $normalizedValue, 0, ',', '.').' VNĐ';
+        }
+
+        return $value;
     }
 }

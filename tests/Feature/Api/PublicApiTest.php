@@ -708,6 +708,24 @@ class PublicApiTest extends TestCase
             ],
         ]);
 
+        $dealerA = Dealer::query()->create([
+            'name' => 'Dealer Quote A',
+            'code' => 'DLR-QUOTE-A',
+            'phone' => '0909555001',
+            'email' => 'dealer.quote.a@example.com',
+            'password' => 'secret123',
+            'status' => 'approved',
+        ]);
+
+        $dealerB = Dealer::query()->create([
+            'name' => 'Dealer Quote B',
+            'code' => 'DLR-QUOTE-B',
+            'phone' => '0909555002',
+            'email' => 'dealer.quote.b@example.com',
+            'password' => 'secret123',
+            'status' => 'approved',
+        ]);
+
         $province = Province::query()->create([
             'code' => 'DL',
             'name' => 'Dak Lak',
@@ -733,21 +751,34 @@ class PublicApiTest extends TestCase
                 'phone' => '0909123456',
                 'email' => 'nguyenvana@example.com',
                 'system_type_id' => $systemType->id,
+                'dealer_ids' => [$dealerA->id, $dealerB->id],
                 'request_payload' => [
                     'roof_area' => '120',
                     'usage_note' => 'Can luu tru cho buoi toi',
                 ],
             ])
             ->assertCreated()
-            ->assertJsonPath('success', true);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.dealer_request_count', 2);
 
-        $supportRequest = SupportRequest::query()->firstOrFail();
+        $customers = Customer::query()->orderBy('dealer_id')->get();
+        $timelines = LeadTimeline::query()->orderBy('id')->get();
 
-        $this->assertSame('system_quote_custom', data_get($supportRequest->request_payload, 'mode'));
-        $this->assertSame('nguyenvana@example.com', $supportRequest->customer_email);
-        $this->assertSame('roof_area', data_get($supportRequest->request_payload, 'fields.0.key'));
-        $this->assertSame('120', data_get($supportRequest->request_payload, 'fields.0.value'));
-        $this->assertSame('usage_note', data_get($supportRequest->request_payload, 'fields.1.key'));
+        $this->assertCount(2, $customers);
+        $this->assertCount(2, Lead::query()->get());
+        $this->assertCount(2, $timelines);
+        $this->assertDatabaseCount('support_requests', 0);
+        $this->assertSame($dealerA->id, $customers[0]->dealer_id);
+        $this->assertSame($dealerB->id, $customers[1]->dealer_id);
+        $this->assertSame('Bất cứ lúc nào', $customers[0]->contact_time);
+        $this->assertStringContainsString('Biểu mẫu: Công thức tính', (string) $customers[0]->notes);
+        $this->assertStringContainsString('Diện tích mái: 120', (string) $customers[0]->notes);
+        $this->assertSame('Bất cứ lúc nào', data_get($timelines[0]->payload, 'contact_time'));
+        $this->assertSame('system_quote_custom', data_get($timelines[0]->payload, 'request_payload.mode'));
+        $this->assertSame('nguyenvana@example.com', data_get($timelines[0]->payload, 'email'));
+        $this->assertSame('roof_area', data_get($timelines[0]->payload, 'request_payload.fields.0.key'));
+        $this->assertSame('120', data_get($timelines[0]->payload, 'request_payload.fields.0.value'));
+        $this->assertSame('usage_note', data_get($timelines[0]->payload, 'request_payload.fields.1.key'));
     }
 
     public function test_system_quote_request_endpoint_stores_standard_system_fields_when_formula_display_is_disabled(): void
@@ -785,6 +816,15 @@ class PublicApiTest extends TestCase
             ],
         ]);
 
+        $dealer = Dealer::query()->create([
+            'name' => 'Dealer Ratio',
+            'code' => 'DLR-RATIO-001',
+            'phone' => '0909777001',
+            'email' => 'dealer.ratio@example.com',
+            'password' => 'secret123',
+            'status' => 'approved',
+        ]);
+
         $this->withHeaders($this->apiHeaders([
             'Authorization' => 'Bearer '.$token,
         ]))
@@ -792,20 +832,28 @@ class PublicApiTest extends TestCase
                 'name' => 'Tran Thi B',
                 'phone' => '0909234567',
                 'system_type_id' => $systemType->id,
+                'dealer_ids' => [$dealer->id],
                 'monthly_bill' => 1800000,
                 'phase_type' => '1P',
                 'start_day' => 65,
             ])
             ->assertCreated()
-            ->assertJsonPath('success', true);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.dealer_request_count', 1);
 
-        $supportRequest = SupportRequest::query()->latest('id')->firstOrFail();
+        $customer = Customer::query()->latest('id')->firstOrFail();
+        $timeline = LeadTimeline::query()->latest('id')->firstOrFail();
 
-        $this->assertSame('system_quote_standard', data_get($supportRequest->request_payload, 'mode'));
-        $this->assertSame(1800000.0, data_get($supportRequest->request_payload, 'fields.0.value'));
-        $this->assertSame('1P', data_get($supportRequest->request_payload, 'fields.1.value'));
-        $this->assertSame(65.0, data_get($supportRequest->request_payload, 'fields.2.value'));
-        $this->assertSame(35.0, data_get($supportRequest->request_payload, 'fields.3.value'));
+        $this->assertSame($dealer->id, $customer->dealer_id);
+        $this->assertSame('Bất cứ lúc nào', $customer->contact_time);
+        $this->assertStringContainsString('Tiền điện trung bình tháng: 1.800.000 VNĐ', (string) $customer->notes);
+        $this->assertSame('Bất cứ lúc nào', data_get($timeline->payload, 'contact_time'));
+        $this->assertSame('system_quote_standard', data_get($timeline->payload, 'request_payload.mode'));
+        $this->assertSame(1800000.0, data_get($timeline->payload, 'request_payload.fields.0.value'));
+        $this->assertSame('1P', data_get($timeline->payload, 'request_payload.fields.1.value'));
+        $this->assertSame(65.0, data_get($timeline->payload, 'request_payload.fields.2.value'));
+        $this->assertSame(35.0, data_get($timeline->payload, 'request_payload.fields.3.value'));
+        $this->assertDatabaseCount('support_requests', 0);
     }
 
     public function test_news_api_returns_tag_color_in_argb_format(): void
